@@ -39,3 +39,17 @@
   margin-left:4%;
   text-align: justify;
 }
+
+.knopf{
+  background-color:white;
+  color:black;
+  border-radius:2%;
+  text-align: center;
+  padding:2%;
+  border:none;
+  cursor:pointer;
+}
+
+.knopf:hover {
+  background-color: #5c5c5c;
+}
