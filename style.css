@@ -4,15 +4,21 @@
   font-family:'georgia';
 }
 .navbar {
-  margin-top:2em;
+  margin-top:1%;
   text-align: center;
 }
 
 .navbar a {
-  margin-right:4%;
-  margin-left:4%;
+  padding-top:2%;
+  padding-right:4%;
+  padding-left:4%;
+  padding-bottom:1%;
   color:white;
   text-decoration:none
+}
+
+.navbar a:hover{
+  background-color: #5c5c5c;
 }
 .textcenter {
   margin-top:10em;
