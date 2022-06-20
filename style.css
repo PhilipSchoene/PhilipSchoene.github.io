@@ -1,0 +1,28 @@
+.komplett {
+  background-color: black;
+  color:white;
+  font-family:'georgia';
+}
+.navbar {
+  margin:2em;
+  text-align: center;
+}
+
+.navbar a {
+  margin:2em;
+  color:white;
+  text-decoration:none
+}
+.textcenter {
+  margin:10em;
+  text-align:center
+}
+.paragraph {
+  margin:2em;
+  text-align: center;
+}
+
+.vieltext {
+  margin:2em;
+  text-align: justify;
+}
