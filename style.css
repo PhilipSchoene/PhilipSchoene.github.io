@@ -41,12 +41,12 @@
 }
 
 .knopf{
-  background-color:white;
-  color:black;
-  border-radius:2%;
+  background-color:black;
+  color:white;
+  border-radius:1.5em;
   text-align: center;
-  padding:2%;
-  border:none;
+  padding:1.5%;
+  border-color: white;
   cursor:pointer;
 }
 
