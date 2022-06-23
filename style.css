@@ -18,9 +18,18 @@
   border-radius:1.5em
 }
 
-.navbar a:hover{
+.navbar a:hover {
   background-color: #5c5c5c;
 }
+
+.link {
+  color:white;
+}
+
+.link:hover {
+  color: #5c5c5c;
+}
+
 .textcenter {
   margin-top:10em;
   margin-right: 4%;
