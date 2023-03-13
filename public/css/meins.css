@@ -1,0 +1,75 @@
+
+.navbar {
+  text-align: center;
+}
+
+.navbar a {
+  padding-top:1%;
+  padding-right:4%;
+  padding-left:4%;
+  padding-bottom:1%;
+  color:white;
+  text-decoration:none;
+  border-radius:1.5em
+}
+
+.tabelle {
+  text-align:center;
+}
+
+.tabelle tbody tr td {
+  text-align:left;
+}
+
+.tabelle tbody tr td a {
+  color: white;
+  text-decoration: none;
+}
+
+.tabelle tbody tr td a:hover {
+    color: #5c5c5c;
+}
+
+.tutor {
+  padding-top:1%;
+  padding-right:2%;
+  padding-left:2%;
+  padding-bottom:1%;
+  color:white;
+  text-decoration:none;
+  border-radius:1.5em
+}
+
+.tutor:hover {
+  color: #5c5c5c;
+  text-decoration:none;
+}
+
+.link {
+  color:white;
+}
+
+.link:hover {
+  color: #5c5c5c;
+}
+
+.textcenter {
+  margin-top:10em;
+  margin-right: 4%;
+  margin-left:4%;
+  text-align:center
+}
+.paragraph {
+  margin-top:2em;
+  margin-right:4%;
+  margin-left:4%;
+  text-align: center;
+}
+
+.vieltext {
+  margin-top:2em;
+  margin-right:4%;
+  margin-left:4%;
+  text-align: justify;
+  line-height: 1.4;
+}
