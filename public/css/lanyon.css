@@ -47,7 +47,6 @@ html {
 h1, h2, h3, h4, h5, h6 {
   font-family: "PT Sans", Helvetica, Arial, sans-serif;
   font-weight: 400;
-  color: #313131;
   letter-spacing: -.025rem;
 }
 
@@ -117,7 +116,7 @@ h1, h2, h3, h4, h5, h6 {
   .masthead-title {
     text-align: center;
   }
-  .masthead-title small {
+  .masthead-title a {
     display: none;
   }
 }
@@ -148,7 +147,6 @@ h1, h2, h3, h4, h5, h6 {
   visibility: hidden;
   overflow-y: auto;
   font-family: "PT Sans", Helvetica, Arial, sans-serif;
-  font-size: .875rem; /* 15px */
   color: white;
   background-color: black;
   -webkit-transition: all .3s ease-in-out;
