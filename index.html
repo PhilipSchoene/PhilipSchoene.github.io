@@ -1,106 +1,35 @@
 <!DOCTYPE html>
-<html lang="en-us">
-
-  <head>
-  <link href="http://gmpg.org/xfn/11" rel="profile">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta http-equiv="content-type" content="text/html; charset=utf-8">
-
-  <!-- Enable responsiveness on mobile devices-->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
-  <link rel="stylesheet" href="./public/css/poole.css">
-  <link rel="stylesheet" href="./public/css/syntax.css">
-  <link rel="stylesheet" href="./public/css/lanyon.css">
-  <link rel="stylesheet" href="./public/css/meins.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700%7CPT+Sans:400">
-
-  <!-- Icons -->
-  <link rel="apple-touch-icon-precomposed" sizes="40x40" href="/public/apple-touch-icon-precomposed.png">
-  <link rel="icon" href="/public/apple-touch-icon-precomposed.png">
-
-  <!-- RSS -->
-  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
-
-  <!-- mathjax -->
-  <script type="text/javascript" async
-  src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
-  </script>
-
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-<!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
-     styles, `#sidebar-checkbox` for behavior. -->
-<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
-
-<!-- Toggleable sidebar -->
-<div class="sidebar" id="sidebar">
-  <div class="sidebar-item">
-    <p style="color:black">
-    Dropdown
-    </p>
-  </div>
-  <nav class="sidebar-nav">
-    <a class="sidebar-nav-item" href="./index.html"><h4 style="margin-top: 0.5rem; color: white">Home</h4></a>
-    <a class="sidebar-nav-item" href="./hm2.html"><h4 style="margin-top: 0.5rem; color: white">Tutorium</h4></a>
-    <a class="sidebar-nav-item" href="./hm1.html"><h4 style="margin-top: 0.5rem; color: white">HM1</h4></a>
-    <a class="sidebar-nav-item" href="./dpg.html"><h4 style="margin-top: 0.5rem; color: white">Poster</h4></a>
-  </nav>
-</div>
-
-
-    <div class="wrap">
-      <div class="masthead">
-        <div class="container">
-          <h4 class="masthead-title" align="center">
-            <div class="navbar">
-            <a href="./index.html">Home</a>
-                 <a href="./hm2.html">Tutorium</a>
-                 <a href="./hm1.html">HM1</a>
-                 <a href="./dpg.html">Poster</a>
+    <div class="container">
+        <div class="countdown">
+            <div class="countdown-item">
+                <span id="days">00</span>
+                <span class="label">Days</span>
             </div>
-          </h4>
+            <div class="separator">:</div>
+            <div class="countdown-item">
+                <span id="hours">00</span>
+                <span class="label">Hours</span>
+            </div>
+            <div class="separator">:</div>
+            <div class="countdown-item">
+                <span id="minutes">00</span>
+                <span class="label">Minutes</span>
+            </div>
+            <div class="separator">:</div>
+            <div class="countdown-item">
+                <span id="seconds">00</span>
+                <span class="label">Seconds</span>
+            </div>
         </div>
-      </div>
-
-      <div class="container content">
-        <div class="page">
-
-  <p align="center">
-    <img src="./bilder/panda.png" width="400" />
-  </p>
-
-  <p class="inhalt">
-    Die Seite zum Kurs wird gerade aktualisiert und mit einem neuen Design versehen. Das Bild oben wurde von Dall-E 2 generiert.
-  </p>
-
-        </div>
-      </div>
     </div>
-
-    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
-
-    <script>
-      (function(document) {
-        var toggle = document.querySelector('.sidebar-toggle');
-        var sidebar = document.querySelector('#sidebar');
-        var checkbox = document.querySelector('#sidebar-checkbox');
-
-        document.addEventListener('click', function(e) {
-          var target = e.target;
-
-          if(!checkbox.checked ||
-             sidebar.contains(target) ||
-             (target === checkbox || target === toggle)) return;
-
-          checkbox.checked = false;
-        }, false);
-      })(document);
-    </script>
-
-  </body>
+    <script src="count.js"></script>
+</body>
 </html>

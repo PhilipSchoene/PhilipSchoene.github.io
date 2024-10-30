@@ -1,0 +1,72 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: url('images/Mehr_Rosen.webp') no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Arial', sans-serif;
+}
+
+.container {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2rem;
+    border-radius: 8px;
+}
+
+.countdown {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.countdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.countdown-item span:first-child {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.separator {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin-top: -1rem;
+}
+
+.label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin-top: 0.2rem;
+}
+
+@media (max-width: 600px) {
+    .countdown-item span:first-child,
+    .separator {
+        font-size: 2rem;
+    }
+    
+    .label {
+        font-size: 0.7rem;
+    }
+    
+    .container {
+        padding: 1rem;
+    }
+    
+    .countdown {
+        gap: 0.3rem;
+    }
+}
