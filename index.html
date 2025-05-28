@@ -1,70 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Model Viewer</title>
-
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
-
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Prevent scrollbars */
-        }
-
-        model-viewer {
-            width: 100%;
-            height: 100%;
-            display: block;
-            --progress-bar-color: dodgerblue; /* Customize as you like */
-        }
-
-        /* Style for a clearly visible custom AR button */
-        #custom-ar-button {
-            display: block; /* Will be shown if AR is available */
-            background-color: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #cccccc;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
-            position: absolute;
-            bottom: 24px; /* Position from bottom */
-            left: 50%; /* Center horizontally */
-            transform: translateX(-50%); /* Adjust for exact centering */
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #333333;
-            text-decoration: none;
-            cursor: pointer;
-            outline: none;
-        }
-        #custom-ar-button:active {
-            background-color: #f0f0f0;
-        }
-    </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poster AR Viewer</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
+  </style>
 </head>
 <body>
+  <a-scene mindar-image="imageTargetSrc: ./images/your_targets.mind; autoStart: true; uiScanning: #scanningHotspot; uiLoading: yes;" 
+           color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
+           vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
 
-    <model-viewer
-        src="./images/your_model.glb"  alt="A 3D model"
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        camera-controls
-        auto-rotate
-        ios-src="" >
+    <div id="scanningHotspot" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; width: 80%; max-width: 400px; text-align: center; background: rgba(0,0,0,0.5); color: white; padding: 20px; border-radius: 10px;">
+        <p>Scan your poster to see the AR content!</p>
+        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iMjAiIHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWRhc2hhcnJheT0iMTAsNSIvPjwvc3ZnPg==" alt="Scanning Frame" style="width: 100px; height: 100px; margin-top: 10px;"/>
+    </div>
 
-        <button slot="ar-button" id="custom-ar-button">
-            View in Your Space
-        </button>
+    <a-assets>
+      <a-asset-item id="myModel" src="./images/your_model.glb"></a-asset-item>
+    </a-assets>
 
-        <div slot="progress-bar" style="height: 4px; background-color: dodgerblue; width: 0%;"></div>
+    <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
 
-    </model-viewer>
-
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-gltf-model src="#myModel" 
+                    position="0 0 0.1"  
+                    scale="0.3 0.3 0.3" 
+                    rotation="0 0 0">
+      </a-gltf-model>
+    </a-entity>
+  </a-scene>
+  <script>
+    // Show scanning UI
+    const sceneEl = document.querySelector('a-scene');
+    const scanningHotspot = document.getElementById('scanningHotspot');
+    sceneEl.addEventListener('uiupdate', (event) => {
+      if (event.detail.type === 'scanning' && event.detail.data.message === 'Scanning image...') {
+        scanningHotspot.style.display = 'block';
+      } else {
+        scanningHotspot.style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
 </body>
