@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GLB Time Series Viewer</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="glb-timeseries-player.js"></script>
   <style>
     body { margin: 0; overflow: hidden; }
     a-scene { height: 100vh; width: 100vw; }
@@ -19,13 +18,14 @@
 
     <a-entity id="cameraRig" position="0 1.6 0">
         <a-camera id="camera" look-controls wasd-controls-enabled="false">
-            </a-camera>
+        </a-camera>
     </a-entity>
 
     <a-entity
         id="animatedModel"
         glb-timeseries-player="modelPaths: images/frame_0.glb, images/frame_1.glb, images/frame_2.glb; frameDuration: 4000"
-        position="0 0.5 -2.5"  rotation="0 0 0"
+        position="0 0.5 -2.5"
+        rotation="0 0 0"
         scale="1 1 1">
           </a-entity>
 
@@ -38,8 +38,111 @@
         shadow="receive: true">
     </a-plane>
 
-    <a-sky color="#ADD8E6"></a-sky> </a-scene>
-</body>
-</html>
+    <a-sky color="#ADD8E6"></a-sky>
+
+  </a-scene>
+
+  <script>
+    AFRAME.registerComponent('glb-timeseries-player', {
+      schema: {
+        modelPaths: {
+          type: 'string', // Comma-separated string of model paths
+          default: ''
+        },
+        frameDuration: {
+          type: 'number', // Duration each frame is shown, in milliseconds
+          default: 4000
+        }
+      },
+
+      init: function () {
+        this.el.object3D.visible = true; // Ensure the main entity itself is visible
+        this.models = []; // To store references to the loaded model entities (A-Frame entities)
+        this.loadedModels = []; // To store only successfully loaded model entities for playback
+        this.currentModelIndexInLoaded = 0; // Index for the 'loadedModels' array
+        this.isLoaded = false;
+
+        this.actualModelPaths = this.data.modelPaths.split(',')
+                                .map(path => path.trim())
+                                .filter(path => path !== '');
+
+        if (this.actualModelPaths.length === 0) {
+          console.error('GLB Timeseries Player: No model paths provided or paths are invalid.');
+          return;
+        }
+
+        let loadPromises = this.actualModelPaths.map((path, index) => {
+          return new Promise((resolve) => { // Resolve even on error to use Promise.allSettled logic
+            const modelEntity = document.createElement('a-entity');
+            modelEntity.setAttribute('gltf-model', path);
+            modelEntity.setAttribute('visible', false); // Initially hide all models
+
+            modelEntity.addEventListener('model-loaded', () => {
+              console.log(`Model loaded: ${path}`);
+              this.models[index] = modelEntity; // Store in original order
+              resolve({status: 'fulfilled', value: modelEntity, path: path});
+            });
+
+            modelEntity.addEventListener('model-error', (errorEvent) => {
+              console.error(`Error loading model ${path}:`, errorEvent.detail.src);
+              this.models[index] = null; // Mark as null or handle error
+              resolve({status: 'rejected', reason: `Failed to load ${path}`, path: path});
+            });
+            
+            this.el.appendChild(modelEntity);
+          });
+        });
+
+        Promise.all(loadPromises).then((results) => { // Using .all as resolve is always called
+          this.loadedModels = [];
+          results.forEach(result => {
+            if (result.status === 'fulfilled') {
+              this.loadedModels.push(result.value);
+            }
+          });
+          
+          if (this.loadedModels.length > 0) {
+            this.loadedModels[0].setAttribute('visible', true); // Show the first successfully loaded model
+            this.isLoaded = true;
+            
+            console.log(`GLB Timeseries Player: ${this.loadedModels.length} models ready. Starting animation.`);
+            if (this.loadedModels.length > 1) {
+              this.timer = setInterval(this.tickAnimation.bind(this), this.data.frameDuration);
+            }
+          } else {
+            console.error('GLB Timeseries Player: No models were successfully loaded.');
+          }
+        });
+      },
+
+      tickAnimation: function () {
+        if (!this.isLoaded || this.loadedModels.length < 2) {
+          return; 
+        }
+
+        // Hide current frame
+        if (this.loadedModels[this.currentModelIndexInLoaded]) {
+            this.loadedModels[this.currentModelIndexInLoaded].setAttribute('visible', false);
+        }
+        
+        // Calculate next frame index within the array of successfully loaded models
+        this.currentModelIndexInLoaded = (this.currentModelIndexInLoaded + 1) % this.loadedModels.length;
+
+        // Show next frame
+        if (this.loadedModels[this.currentModelIndexInLoaded]) {
+            this.loadedModels[this.currentModelIndexInLoaded].setAttribute('visible', true);
+            // Find original path for logging if needed (more complex, skipping for brevity here)
+            // console.log(`Displaying model index in loaded array: ${this.currentModelIndexInLoaded}`);
+        }
+      },
+
+      remove: function () {
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+      }
+    });
+  </script>
 </body>
 </html>
