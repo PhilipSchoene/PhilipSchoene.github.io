@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AR Sphere Animation</title>
     
-    <!-- A-Frame and AR.js -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/supermedium/superframe@master/components/environment/dist/aframe-environment-component.min.js"></script>
@@ -108,7 +107,6 @@
     </style>
 </head>
 <body>
-    <!-- Loading Overlay -->
     <div id="loadingOverlay">
         <h2>Loading Animation Frames...</h2>
         <div id="progressBar">
@@ -117,43 +115,34 @@
         <div id="loadingText">0 / 30 frames loaded</div>
     </div>
     
-    <!-- Non-AR Mode Toggle -->
     <div id="nonARMode">
         <button onclick="toggleARMode()">Toggle AR/3D Mode</button>
     </div>
     
-    <!-- A-Frame Scene -->
     <a-scene
         id="scene"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
     >
-        <!-- Assets -->
         <a-assets id="assets">
-            <!-- GLB models will be loaded dynamically -->
-        </a-assets>
+            </a-assets>
         
-        <!-- Marker-based AR -->
-        <a-marker preset="hiro" id="marker">
+        <a-marker type="barcode" value="512" id="marker">
             <a-entity
                 id="sphereModel"
                 position="0 0 0"
-                scale="1 1 1"
-                rotation="0 0 0"
+                scale="1 1 1" rotation="0 0 0"
             ></a-entity>
         </a-marker>
         
-        <!-- Camera -->
         <a-entity camera></a-entity>
         
-        <!-- Lights for non-AR mode -->
         <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
         <a-light type="directional" position="0 1 1" color="#ffffff" intensity="0.5"></a-light>
     </a-scene>
     
-    <!-- Animation Controls -->
     <div id="controls" style="display: none;">
         <button onclick="previousFrame()">Previous</button>
         <button onclick="togglePlayPause()" id="playPauseBtn">Play</button>
@@ -166,13 +155,13 @@
     <script>
         // Configuration
         const NUM_FRAMES = 30;
-        const FRAME_PATH = 'glb_frames/sphere_frame_';
+        const FRAME_PATH = 'glb_frames/sphere_frame_'; // Ensure this path is correct
         let frames = [];
         let currentFrame = 0;
         let isPlaying = false;
         let playInterval = null;
         let fps = 30;
-        let isARMode = true;
+        let isARMode = true; // Start in AR mode by default
         let framesLoaded = 0;
         
         // Initialize
@@ -198,22 +187,38 @@
                 assets.appendChild(assetEl);
                 
                 // Wait for model to load
-                assetEl.addEventListener('loaded', () => {
-                    framesLoaded++;
-                    const progress = (framesLoaded / NUM_FRAMES) * 100;
-                    progressFill.style.width = progress + '%';
-                    loadingText.textContent = `${framesLoaded} / ${NUM_FRAMES} frames loaded`;
-                    
-                    if (framesLoaded === NUM_FRAMES) {
-                        onAllFramesLoaded();
-                    }
-                });
+                // Using a promise to handle load and error events for each asset
+                await new Promise((resolve, reject) => {
+                    assetEl.addEventListener('loaded', () => {
+                        framesLoaded++;
+                        const progress = (framesLoaded / NUM_FRAMES) * 100;
+                        progressFill.style.width = progress + '%';
+                        loadingText.textContent = `${framesLoaded} / ${NUM_FRAMES} frames loaded`;
+                        
+                        if (framesLoaded === NUM_FRAMES) {
+                            onAllFramesLoaded();
+                        }
+                        resolve();
+                    });
+                    assetEl.addEventListener('error', (err) => {
+                        console.error(`Error loading frame ${modelId} from ${modelPath}:`, err);
+                        // Potentially handle error, e.g., skip frame or show message
+                        framesLoaded++; // Still increment to eventually hide loading screen
+                        const progress = (framesLoaded / NUM_FRAMES) * 100;
+                        progressFill.style.width = progress + '%';
+                        loadingText.textContent = `${framesLoaded} / ${NUM_FRAMES} frames loaded (with errors)`;
+                        if (framesLoaded === NUM_FRAMES) {
+                            onAllFramesLoaded(); // Still proceed if some frames fail
+                        }
+                        reject(err);
+                    });
+                }).catch(err => console.warn(`Skipped frame ${modelId} due to loading error.`));
                 
-                frames.push(modelId);
+                frames.push(modelId); // Add modelId even if it failed, to maintain frame count for UI
             }
         }
         
-        // Called when all frames are loaded
+        // Called when all frames are loaded (or attempted to load)
         function onAllFramesLoaded() {
             // Hide loading overlay
             document.getElementById('loadingOverlay').style.display = 'none';
@@ -227,14 +232,21 @@
             // Add keyboard controls
             document.addEventListener('keydown', handleKeyPress);
             
-            // Add touch/click controls for mobile
-            const scene = document.querySelector('a-scene');
-            scene.addEventListener('click', togglePlayPause);
         }
         
         // Update displayed frame
         function updateFrame(frameIndex) {
             const sphereModel = document.getElementById('sphereModel');
+            if (!sphereModel) {
+                console.error("sphereModel element not found");
+                return;
+            }
+            
+            // Ensure frameIndex is valid
+            if (frameIndex < 0 || frameIndex >= frames.length) {
+                console.error(`Invalid frameIndex: ${frameIndex}`);
+                return;
+            }
             
             // Remove current model
             while (sphereModel.firstChild) {
@@ -242,10 +254,17 @@
             }
             
             // Add new model
-            const modelEl = document.createElement('a-gltf-model');
-            modelEl.setAttribute('src', `#${frames[frameIndex]}`);
-            modelEl.setAttribute('animation__rotate', 'property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear');
-            sphereModel.appendChild(modelEl);
+            // Check if the asset for this frame actually loaded successfully
+            const modelAsset = document.getElementById(frames[frameIndex]);
+            if (modelAsset && modelAsset.hasLoaded) { // hasLoaded is an A-Frame internal flag
+                const modelEl = document.createElement('a-gltf-model');
+                modelEl.setAttribute('src', `#${frames[frameIndex]}`);
+                // Re-apply any persistent animations or properties if needed
+                modelEl.setAttribute('animation__rotate', 'property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear');
+                sphereModel.appendChild(modelEl);
+            } else {
+                console.warn(`Frame ${frames[frameIndex]} was not loaded or failed to load. Skipping display.`);
+            }
             
             // Update UI
             document.getElementById('frameInfo').textContent = `Frame: ${frameIndex + 1} / ${NUM_FRAMES}`;
@@ -293,7 +312,7 @@
             fps = parseInt(document.getElementById('speedSlider').value);
             document.getElementById('speedInfo').textContent = `${fps} fps`;
             
-            if (isPlaying) {
+            if (isPlaying) { // If playing, restart with new speed
                 pause();
                 play();
             }
@@ -302,8 +321,8 @@
         // Keyboard controls
         function handleKeyPress(e) {
             switch(e.key) {
-                case ' ':
-                    e.preventDefault();
+                case ' ': // Space bar
+                    e.preventDefault(); // Prevent page scroll
                     togglePlayPause();
                     break;
                 case 'ArrowLeft':
@@ -318,40 +337,58 @@
         // Toggle between AR and 3D mode
         function toggleARMode() {
             isARMode = !isARMode;
-            const scene = document.getElementById('scene');
-            const marker = document.getElementById('marker');
-            const sphereModel = document.getElementById('sphereModel');
-            
+            const sceneEl = document.getElementById('scene');
+            const markerEl = document.getElementById('marker');
+            const sphereModelEl = document.getElementById('sphereModel');
+            let environmentEl = document.getElementById('environment');
+
+            if (!sceneEl || !markerEl || !sphereModelEl) {
+                console.error("Required elements for AR/3D toggle not found.");
+                return;
+            }
+
             if (isARMode) {
-                // AR Mode
-                scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false;');
-                marker.appendChild(sphereModel);
-                sphereModel.setAttribute('position', '0 0 0');
-                sphereModel.setAttribute('scale', '1 1 1');
-            } else {
-                // 3D Mode
-                scene.removeAttribute('arjs');
-                scene.appendChild(sphereModel);
-                sphereModel.setAttribute('position', '0 0 -5');
-                sphereModel.setAttribute('scale', '2 2 2');
-                
-                // Add environment for 3D mode
-                if (!document.getElementById('environment')) {
-                    const env = document.createElement('a-entity');
-                    env.setAttribute('id', 'environment');
-                    env.setAttribute('environment', 'preset: forest; groundColor: #445; grid: cross');
-                    scene.appendChild(env);
+                // Switch to AR Mode
+                sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;'); // Ensure 4x4 is set here too
+                markerEl.appendChild(sphereModelEl);
+                sphereModelEl.setAttribute('position', '0 0 0');
+                sphereModelEl.setAttribute('scale', '1 1 1'); 
+                if (environmentEl) {
+                    environmentEl.setAttribute('visible', 'false'); 
                 }
+                if (sceneEl.components.arjs && sceneEl.components.arjs.arContext) { // Check if arContext exists
+                    // sceneEl.components.arjs.arContext.update(); // Attempt to refresh AR context if needed
+                }
+
+
+            } else {
+                // Switch to 3D Mode
+                if (sceneEl.hasAttribute('arjs')) {
+                    sceneEl.removeAttribute('arjs'); 
+                }
+                sceneEl.appendChild(sphereModelEl);
+                sphereModelEl.setAttribute('position', '0 1.5 -5'); 
+                sphereModelEl.setAttribute('scale', '2 2 2');   
+
+                if (!environmentEl) {
+                    environmentEl = document.createElement('a-entity');
+                    environmentEl.setAttribute('id', 'environment');
+                    sceneEl.appendChild(environmentEl);
+                }
+                environmentEl.setAttribute('environment', 'preset: forest; groundColor: #445; grid: cross; skyType: atmosphere; skyColor: #88c; sunPosition: 1 1 -1');
+                environmentEl.setAttribute('visible', 'true'); 
             }
         }
         
-        // Handle window resize
+        // Handle window resize for camera aspect ratio
         window.addEventListener('resize', () => {
-            const camera = document.querySelector('[camera]');
-            if (camera) {
-                camera.setAttribute('camera', 'aspect', window.innerWidth / window.innerHeight);
+            const scene = document.querySelector('a-scene'); 
+            if (scene && scene.camera && scene.camera.el) { 
+                 const cameraEl = scene.camera.el;
+                cameraEl.setAttribute('camera', 'aspect', window.innerWidth / window.innerHeight);
             }
         });
+
     </script>
 </body>
 </html>
