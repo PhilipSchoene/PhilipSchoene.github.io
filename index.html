@@ -122,7 +122,7 @@
     <a-scene
         id="scene"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4; sourceWidth: 1280; sourceHeight: 720;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
     >
@@ -187,7 +187,6 @@
                 assets.appendChild(assetEl);
                 
                 // Wait for model to load
-                // Using a promise to handle load and error events for each asset
                 await new Promise((resolve, reject) => {
                     assetEl.addEventListener('loaded', () => {
                         framesLoaded++;
@@ -202,75 +201,53 @@
                     });
                     assetEl.addEventListener('error', (err) => {
                         console.error(`Error loading frame ${modelId} from ${modelPath}:`, err);
-                        // Potentially handle error, e.g., skip frame or show message
-                        framesLoaded++; // Still increment to eventually hide loading screen
+                        framesLoaded++; 
                         const progress = (framesLoaded / NUM_FRAMES) * 100;
                         progressFill.style.width = progress + '%';
                         loadingText.textContent = `${framesLoaded} / ${NUM_FRAMES} frames loaded (with errors)`;
                         if (framesLoaded === NUM_FRAMES) {
-                            onAllFramesLoaded(); // Still proceed if some frames fail
+                            onAllFramesLoaded(); 
                         }
                         reject(err);
                     });
                 }).catch(err => console.warn(`Skipped frame ${modelId} due to loading error.`));
                 
-                frames.push(modelId); // Add modelId even if it failed, to maintain frame count for UI
+                frames.push(modelId); 
             }
         }
         
-        // Called when all frames are loaded (or attempted to load)
         function onAllFramesLoaded() {
-            // Hide loading overlay
             document.getElementById('loadingOverlay').style.display = 'none';
-            
-            // Show controls
             document.getElementById('controls').style.display = 'flex';
-            
-            // Set initial frame
             updateFrame(0);
-            
-            // Add keyboard controls
             document.addEventListener('keydown', handleKeyPress);
-            
         }
         
-        // Update displayed frame
         function updateFrame(frameIndex) {
             const sphereModel = document.getElementById('sphereModel');
             if (!sphereModel) {
                 console.error("sphereModel element not found");
                 return;
             }
-            
-            // Ensure frameIndex is valid
             if (frameIndex < 0 || frameIndex >= frames.length) {
                 console.error(`Invalid frameIndex: ${frameIndex}`);
                 return;
             }
-            
-            // Remove current model
             while (sphereModel.firstChild) {
                 sphereModel.removeChild(sphereModel.firstChild);
             }
-            
-            // Add new model
-            // Check if the asset for this frame actually loaded successfully
             const modelAsset = document.getElementById(frames[frameIndex]);
-            if (modelAsset && modelAsset.hasLoaded) { // hasLoaded is an A-Frame internal flag
+            if (modelAsset && modelAsset.hasLoaded) { 
                 const modelEl = document.createElement('a-gltf-model');
                 modelEl.setAttribute('src', `#${frames[frameIndex]}`);
-                // Re-apply any persistent animations or properties if needed
                 modelEl.setAttribute('animation__rotate', 'property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear');
                 sphereModel.appendChild(modelEl);
             } else {
                 console.warn(`Frame ${frames[frameIndex]} was not loaded or failed to load. Skipping display.`);
             }
-            
-            // Update UI
             document.getElementById('frameInfo').textContent = `Frame: ${frameIndex + 1} / ${NUM_FRAMES}`;
         }
         
-        // Animation controls
         function nextFrame() {
             currentFrame = (currentFrame + 1) % NUM_FRAMES;
             updateFrame(currentFrame);
@@ -284,7 +261,6 @@
         function togglePlayPause() {
             isPlaying = !isPlaying;
             const btn = document.getElementById('playPauseBtn');
-            
             if (isPlaying) {
                 btn.textContent = 'Pause';
                 play();
@@ -311,18 +287,16 @@
         function updateSpeed() {
             fps = parseInt(document.getElementById('speedSlider').value);
             document.getElementById('speedInfo').textContent = `${fps} fps`;
-            
-            if (isPlaying) { // If playing, restart with new speed
+            if (isPlaying) { 
                 pause();
                 play();
             }
         }
         
-        // Keyboard controls
         function handleKeyPress(e) {
             switch(e.key) {
-                case ' ': // Space bar
-                    e.preventDefault(); // Prevent page scroll
+                case ' ': 
+                    e.preventDefault(); 
                     togglePlayPause();
                     break;
                 case 'ArrowLeft':
@@ -334,7 +308,6 @@
             }
         }
         
-        // Toggle between AR and 3D mode
         function toggleARMode() {
             isARMode = !isARMode;
             const sceneEl = document.getElementById('scene');
@@ -347,22 +320,17 @@
                 return;
             }
 
+            const arjsSettings = 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4; sourceWidth: 1280; sourceHeight: 720;';
+
             if (isARMode) {
-                // Switch to AR Mode
-                sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;'); // Ensure 4x4 is set here too
+                sceneEl.setAttribute('arjs', arjsSettings); 
                 markerEl.appendChild(sphereModelEl);
                 sphereModelEl.setAttribute('position', '0 0 0');
                 sphereModelEl.setAttribute('scale', '1 1 1'); 
                 if (environmentEl) {
                     environmentEl.setAttribute('visible', 'false'); 
                 }
-                if (sceneEl.components.arjs && sceneEl.components.arjs.arContext) { // Check if arContext exists
-                    // sceneEl.components.arjs.arContext.update(); // Attempt to refresh AR context if needed
-                }
-
-
             } else {
-                // Switch to 3D Mode
                 if (sceneEl.hasAttribute('arjs')) {
                     sceneEl.removeAttribute('arjs'); 
                 }
@@ -380,7 +348,6 @@
             }
         }
         
-        // Handle window resize for camera aspect ratio
         window.addEventListener('resize', () => {
             const scene = document.querySelector('a-scene'); 
             if (scene && scene.camera && scene.camera.el) { 
