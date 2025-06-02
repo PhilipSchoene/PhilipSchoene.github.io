@@ -7,7 +7,6 @@
     
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/supermedium/superframe@master/components/environment/dist/aframe-environment-component.min.js"></script>
     
     <style>
         body {
@@ -35,25 +34,16 @@
             background: #4CAF50;
             border: none;
             color: white;
-            padding: 8px 16px;
+            padding: 10px 20px; /* Increased padding for a slightly larger button */
             border-radius: 20px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px; /* Slightly larger font */
         }
         
         #controls button:hover {
             background: #45a049;
         }
-        
-        #controls button:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-        
-        #frameInfo {
-            font-size: 14px;
-        }
-        
+                
         #loadingOverlay {
             position: fixed;
             top: 0;
@@ -88,22 +78,7 @@
             width: 0%;
             transition: width 0.3s;
         }
-        
-        #nonARMode {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 999;
-        }
-        
-        #nonARMode button {
-            background: #2196F3;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+
     </style>
 </head>
 <body>
@@ -113,10 +88,6 @@
             <div id="progressFill"></div>
         </div>
         <div id="loadingText">0 / 30 frames loaded</div>
-    </div>
-    
-    <div id="nonARMode">
-        <button onclick="toggleARMode()">Toggle AR/3D Mode</button>
     </div>
     
     <a-scene
@@ -133,7 +104,8 @@
             <a-entity
                 id="sphereModel"
                 position="0 0 0"
-                scale="1 1 1" rotation="0 0 0"
+                scale="1 1 1" 
+                rotation="0 0 0"
             ></a-entity>
         </a-marker>
         
@@ -144,12 +116,7 @@
     </a-scene>
     
     <div id="controls" style="display: none;">
-        <button onclick="previousFrame()">Previous</button>
         <button onclick="togglePlayPause()" id="playPauseBtn">Play</button>
-        <button onclick="nextFrame()">Next</button>
-        <div id="frameInfo">Frame: 1 / 30</div>
-        <input type="range" id="speedSlider" min="1" max="60" value="30" onchange="updateSpeed()">
-        <span id="speedInfo">30 fps</span>
     </div>
     
     <script>
@@ -160,8 +127,7 @@
         let currentFrame = 0;
         let isPlaying = false;
         let playInterval = null;
-        let fps = 30;
-        let isARMode = true; // Start in AR mode by default
+        let fps = 1; // Animation speed: 1 frame per second
         let framesLoaded = 0;
         
         // Initialize
@@ -214,13 +180,15 @@
             }
         }
         
+        // Called when all frames are loaded (or attempted to load)
         function onAllFramesLoaded() {
             document.getElementById('loadingOverlay').style.display = 'none';
-            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('controls').style.display = 'flex'; // Show the simplified controls
             updateFrame(0);
-            document.addEventListener('keydown', handleKeyPress);
+            // Keyboard controls removed for simplicity
         }
         
+        // Update displayed frame
         function updateFrame(frameIndex) {
             const sphereModel = document.getElementById('sphereModel');
             if (!sphereModel) {
@@ -231,9 +199,11 @@
                 console.error(`Invalid frameIndex: ${frameIndex}`);
                 return;
             }
+            // Remove current model
             while (sphereModel.firstChild) {
                 sphereModel.removeChild(sphereModel.firstChild);
             }
+            // Add new model
             const modelAsset = document.getElementById(frames[frameIndex]);
             if (modelAsset && modelAsset.hasLoaded) { 
                 const modelEl = document.createElement('a-gltf-model');
@@ -243,24 +213,21 @@
             } else {
                 console.warn(`Frame ${frames[frameIndex]} was not loaded or failed to load. Skipping display.`);
             }
-            document.getElementById('frameInfo').textContent = `Frame: ${frameIndex + 1} / ${NUM_FRAMES}`;
+            // Frame info display removed
         }
         
+        // Animation control: advances to the next frame
         function nextFrame() {
             currentFrame = (currentFrame + 1) % NUM_FRAMES;
             updateFrame(currentFrame);
         }
         
-        function previousFrame() {
-            currentFrame = (currentFrame - 1 + NUM_FRAMES) % NUM_FRAMES;
-            updateFrame(currentFrame);
-        }
-        
+        // Play/Pause functionality
         function togglePlayPause() {
             isPlaying = !isPlaying;
             const btn = document.getElementById('playPauseBtn');
             if (isPlaying) {
-                btn.textContent = 'Pause';
+                btn.textContent = 'Stop';
                 play();
             } else {
                 btn.textContent = 'Play';
@@ -270,9 +237,10 @@
         
         function play() {
             if (playInterval) clearInterval(playInterval);
+            // fps is 1, so interval is 1000ms (1 second)
             playInterval = setInterval(() => {
                 nextFrame();
-            }, 1000 / fps);
+            }, 1000 / fps); 
         }
         
         function pause() {
@@ -282,71 +250,7 @@
             }
         }
         
-        function updateSpeed() {
-            fps = parseInt(document.getElementById('speedSlider').value);
-            document.getElementById('speedInfo').textContent = `${fps} fps`;
-            if (isPlaying) { 
-                pause();
-                play();
-            }
-        }
-        
-        function handleKeyPress(e) {
-            switch(e.key) {
-                case ' ': 
-                    e.preventDefault(); 
-                    togglePlayPause();
-                    break;
-                case 'ArrowLeft':
-                    previousFrame();
-                    break;
-                case 'ArrowRight':
-                    nextFrame();
-                    break;
-            }
-        }
-        
-        function toggleARMode() {
-            isARMode = !isARMode;
-            const sceneEl = document.getElementById('scene');
-            const markerEl = document.getElementById('marker');
-            const sphereModelEl = document.getElementById('sphereModel');
-            let environmentEl = document.getElementById('environment');
-
-            if (!sceneEl || !markerEl || !sphereModelEl) {
-                console.error("Required elements for AR/3D toggle not found.");
-                return;
-            }
-
-            // AR.js settings without sourceWidth/Height for this test
-            const arjsSettings = 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;';
-
-            if (isARMode) {
-                sceneEl.setAttribute('arjs', arjsSettings); 
-                markerEl.appendChild(sphereModelEl);
-                sphereModelEl.setAttribute('position', '0 0 0');
-                sphereModelEl.setAttribute('scale', '1 1 1'); 
-                if (environmentEl) {
-                    environmentEl.setAttribute('visible', 'false'); 
-                }
-            } else {
-                if (sceneEl.hasAttribute('arjs')) {
-                    sceneEl.removeAttribute('arjs'); 
-                }
-                sceneEl.appendChild(sphereModelEl);
-                sphereModelEl.setAttribute('position', '0 1.5 -5'); 
-                sphereModelEl.setAttribute('scale', '2 2 2');   
-
-                if (!environmentEl) {
-                    environmentEl = document.createElement('a-entity');
-                    environmentEl.setAttribute('id', 'environment');
-                    sceneEl.appendChild(environmentEl);
-                }
-                environmentEl.setAttribute('environment', 'preset: forest; groundColor: #445; grid: cross; skyType: atmosphere; skyColor: #88c; sunPosition: 1 1 -1');
-                environmentEl.setAttribute('visible', 'true'); 
-            }
-        }
-        
+        // Handle window resize for camera aspect ratio (still useful)
         window.addEventListener('resize', () => {
             const scene = document.querySelector('a-scene'); 
             if (scene && scene.camera && scene.camera.el) { 
