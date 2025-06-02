@@ -122,7 +122,7 @@
     <a-scene
         id="scene"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4; sourceWidth: 1280; sourceHeight: 720;"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
     >
@@ -180,13 +180,11 @@
                 const modelId = `frame${i}`;
                 const modelPath = `${FRAME_PATH}${frameNum}.glb`;
                 
-                // Create asset element
                 const assetEl = document.createElement('a-asset-item');
                 assetEl.setAttribute('id', modelId);
                 assetEl.setAttribute('src', modelPath);
                 assets.appendChild(assetEl);
                 
-                // Wait for model to load
                 await new Promise((resolve, reject) => {
                     assetEl.addEventListener('loaded', () => {
                         framesLoaded++;
@@ -320,7 +318,8 @@
                 return;
             }
 
-            const arjsSettings = 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4; sourceWidth: 1280; sourceHeight: 720;';
+            // AR.js settings without sourceWidth/Height for this test
+            const arjsSettings = 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 4x4;';
 
             if (isARMode) {
                 sceneEl.setAttribute('arjs', arjsSettings); 
