@@ -1,0 +1,13 @@
+name = "jga-vincent"
+main = "worker.js"
+compatibility_date = "2025-04-01"
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+# new_sqlite_classes, nicht new_classes: der Free-Plan kann nur
+# SQLite-basierte Durable Objects anlegen.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
