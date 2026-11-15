@@ -54,8 +54,9 @@ a:focus-visible, button:focus-visible { outline: 1px solid var(--fg); outline-of
   letter-spacing: -0.035em;
 }
 
+.home h1 + nav { margin-top: 28px; }
+
 .home nav {
-  margin-top: 28px;
   display: flex;
   gap: 32px;
   font-size: 19px;
@@ -82,7 +83,8 @@ a:focus-visible, button:focus-visible { outline: 1px solid var(--fg); outline-of
   font-size: 14px;
 }
 
-.top .name { font-weight: 600; }
+.top .name { color: var(--muted); transition: color .2s; }
+.top .name:hover { color: var(--fg); }
 .top nav { display: flex; gap: 24px; }
 .top nav a { color: var(--muted); transition: color .2s; }
 .top nav a:hover, .top nav a[aria-current="page"] { color: var(--fg); }

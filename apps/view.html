@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Apps — Philip Schoene</title>
+  <title>Apps</title>
   <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body class="viewer">
@@ -47,7 +47,7 @@
       var count = document.createElement("span");
       count.textContent = (i + 1) + " / " + apps.length;
       label.append(count);
-      document.title = app.title + " — Philip Schoene";
+      document.title = app.title;
       var url = "?app=" + encodeURIComponent(app.slug);
       if (push) history.pushState({ i: i }, "", url);
       else history.replaceState({ i: i }, "", url);
