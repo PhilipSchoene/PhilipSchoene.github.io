@@ -43,7 +43,6 @@ p{margin-bottom:1em}
 @media (max-width:640px){.stage{grid-template-columns:1fr}}
 canvas{display:block;width:100%;border-radius:14px;background:var(--soft);touch-action:none}
 #plane{aspect-ratio:1/1}
-#crowd{aspect-ratio:16/10}
 .caption{font-size:13px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between;gap:12px}
 
 .sliders label{display:block;margin-bottom:14px;font-size:14px}
@@ -80,10 +79,6 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 ol.why{list-style:none;counter-reset:w}
 ol.why li{counter-increment:w;position:relative;padding:14px 0 14px 32px;border-top:1px solid var(--line)}
 ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var(--muted);font-size:13px}
-.legend{display:flex;gap:18px;font-size:13px;color:var(--muted)}
-.legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}
-.legend .r::before{background:var(--ink)}
-.legend .j::before{border:1.5px solid var(--ink);box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -109,12 +104,6 @@ ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var
   </div>
 
   <div class="verdict" id="verdict"></div>
-
-  <h2>The same game, as particles</h2>
-  <p>A crowd of Romeos and Juliets on a dance floor. Each Romeo is pulled towards nearby Juliets with strength \(b\) (pushed away if negative), each Juliet towards nearby Romeos with \(c\). Everyone keeps a little personal space and jiggles with the same noise.</p>
-  <canvas id="crowd" aria-label="Crowd of Romeos and Juliets"></canvas>
-  <div class="caption"><span class="legend"><span class="r">Romeo</span><span class="j">Juliet</span></span><span class="ctl"><button id="shuffle">Shuffle</button></span></div>
-  <p class="story" id="crowdstory" style="margin-top:14px"></p>
 
   <h2>Why</h2>
   <ol class="why" id="why"></ol>
@@ -177,7 +166,7 @@ $("why").innerHTML = [
   R`The self terms \(a, d\) and the saturation \(-\varepsilon R^3\) depend on one lover only, so they never spoil the potential: \(-\varepsilon R^3\) is just the slope of \(\varepsilon R^4/4\). The verdict is decided by \(b\) and \(c\) alone. The saturation is not in Strogatz’s model; it keeps feelings finite and allows endings other than indifference. Set \(\varepsilon = 0\) for the pure linear version, runaways included.`,
   R`The noise is thermal: each lover jitters with strength \(\mu T\). Then a variational couple reaches true equilibrium, \(P \propto e^{-U/T}\), and every probability current vanishes.`,
   R`The swirl \(\langle R\dot J - J\dot R\rangle\) is the angular momentum of the probability current. In equilibrium it is exactly zero. A circulating, non-zero swirl is the fingerprint of a non-variational couple.`,
-  R`Particles: the chaser card of the quiz is the special case \(a = -b\), \(d = -c\), where only the gap \(R - J\) matters. On the dance floor, same-sign \(b, c\) give mixed clusters (both attract) or demixing (both avoid), all in equilibrium. Opposite signs make chasing pairs that run off on their own: active matter from non-reciprocity.`,
+  R`Particles: the chaser card of the quiz is the special case \(a = -b\), \(d = -c\), where only the gap \(R - J\) matters. Same-sign \(b, c\) is an ordinary spring, opposite signs are a chasing pair that runs off on its own: active matter from non-reciprocity.`,
   R`Purist’s footnote: if Romeo’s feelings could move Juliet’s directly (an off-diagonal mobility), any linear couple with real eigenvalues could be written as downhill. Here each lover has their own responsiveness, and so does the noise.`
 ].map(s => `<li>${rich(s)}</li>`).join("");
 
@@ -210,8 +199,7 @@ sliderBox.append(ctl);
 
 let running = true;
 $("pause").onclick = () => { running = !running; $("pause").textContent = running ? "Pause" : "Play"; };
-$("restart").onclick = () => { seedPlane(); seedCrowd(); };
-$("shuffle").onclick = seedCrowd;
+$("restart").onclick = seedPlane;
 
 function markPreset(i) { [...chipBox.children].forEach((b, j) => b.classList.toggle("on", j === i)); if (i < 0) $("story").textContent = "Your own couple."; }
 function applyPreset(i) {
@@ -437,7 +425,6 @@ function changed(params) {
   syncSliders();
   verdict();                               // cheap; also refreshes the prediction when T changes
   resetStats();
-  crowdText();
 }
 
 // ---------- love plane ----------
@@ -519,80 +506,6 @@ function drawPlane() {
   c.beginPath(); c.arc(sx(X[0]), sy(Y[0]), 4.5 * dpr, 0, 7); c.fill();
 }
 
-// ---------- crowd ----------
-const crowd = $("crowd"), cctx = crowd.getContext("2d");
-const NC = 110, LX = 24, LY = 15, RC = 2.4, SIG = 0.75, KREP = 24;
-const KX = 3, TC = 0.4;                   // crowd: stronger pull, gentler noise (same for everyone)
-let cx = new Float64Array(2 * NC), cy = new Float64Array(2 * NC);   // 0..NC-1 Romeo, NC.. Juliet
-
-const H = 16;                                                       // trail length in frames
-let hist = [];
-function seedCrowd() { for (let i = 0; i < 2 * NC; i++) { cx[i] = Math.random() * LX; cy[i] = Math.random() * LY; } hist = []; }
-function recordCrowd() { hist.push([cx.slice(), cy.slice()]); if (hist.length > H) hist.shift(); }
-
-function stepCrowd(dt) {
-  const n = 2 * NC, vx = new Float64Array(n), vy = new Float64Array(n);
-  const mR = mobR(), mJ = mobJ();
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
-    let dx = cx[j] - cx[i], dy = cy[j] - cy[i];
-    dx -= LX * Math.round(dx / LX); dy -= LY * Math.round(dy / LY);
-    const r2 = dx * dx + dy * dy; if (r2 > RC * RC || r2 < 1e-12) continue;
-    const r = Math.sqrt(r2), ux = dx / r, uy = dy / r;       // unit vector i -> j
-    const mi = i < NC ? mR : mJ, mj = j < NC ? mR : mJ;
-    if (r < SIG) {                                          // personal space, reciprocal
-      const f = KREP * (1 - r / SIG);
-      vx[i] -= mi * f * ux; vy[i] -= mi * f * uy; vx[j] += mj * f * ux; vy[j] += mj * f * uy;
-    }
-    if ((i < NC) !== (j < NC)) {                            // Romeo-Juliet pair
-      const g = KX * (1 - r / RC);
-      const ki = i < NC ? P.b : P.c, kj = j < NC ? P.b : P.c; // pull towards the other
-      vx[i] += ki * g * ux; vy[i] += ki * g * uy;
-      vx[j] -= kj * g * ux; vy[j] -= kj * g * uy;
-    }
-  }
-  const sR = Math.sqrt(2 * mR * TC * P.T * dt), sJ = Math.sqrt(2 * mJ * TC * P.T * dt);
-  for (let i = 0; i < n; i++) {
-    const s = i < NC ? sR : sJ;
-    cx[i] = ((cx[i] + vx[i] * dt + s * gauss()) % LX + LX) % LX;
-    cy[i] = ((cy[i] + vy[i] * dt + s * gauss()) % LY + LY) % LY;
-  }
-}
-
-function drawCrowd() {
-  const { w, h, dpr } = sizeCanvas(crowd), c = cctx, ink = css("--ink");
-  const k = w / LX, k0 = k, rad = 0.26 * k;
-  c.clearRect(0, 0, w, h);
-  // short trails: persistent motion shows up as streaks
-  c.strokeStyle = ink; c.lineWidth = 1.2 * dpr; c.lineCap = "round";
-  for (let k = 1; k < hist.length; k++) {
-    c.globalAlpha = 0.25 * k / hist.length;
-    c.beginPath();
-    const [ax, ay] = hist[k - 1], [bx, by] = hist[k];
-    for (let i = 0; i < 2 * NC; i++) {
-      if (Math.abs(bx[i] - ax[i]) > LX / 2 || Math.abs(by[i] - ay[i]) > LY / 2) continue;
-      c.moveTo(ax[i] * k0, ay[i] * (h / LY)); c.lineTo(bx[i] * k0, by[i] * (h / LY));
-    }
-    c.stroke();
-  }
-  c.globalAlpha = 1;
-  c.fillStyle = ink; c.strokeStyle = ink; c.lineWidth = 1.5 * dpr;
-  for (let i = 0; i < 2 * NC; i++) {
-    c.beginPath(); c.arc(cx[i] * k, cy[i] * (h / LY), rad, 0, 7);
-    if (i < NC) c.fill(); else c.stroke();
-  }
-}
-
-function crowdText() {
-  const k = kind();
-  let t;
-  if (k === "apart") t = "Strangers: two ideal gases that pass through each other’s lives. Equilibrium.";
-  else if (k === "yes" && P.b > 0) t = "Both attract: mixed Romeo–Juliet clusters form and sit still, only jiggling. Equilibrium, whatever the ratio of b to c.";
-  else if (k === "yes") t = "Both avoid: Romeos and Juliets demix into separate patches. Still equilibrium.";
-  else if (k === "no") t = (P.b > 0 ? "Romeos chase, Juliets flee." : "Juliets chase, Romeos flee.") + " Pairs and clusters run off together in a persistent direction. Nothing pushes them from outside: self-propulsion out of non-reciprocity. Active matter.";
-  else t = (P.b !== 0 ? "Romeos react to Juliets, Juliets ignore them." : "Juliets react to Romeos, Romeos ignore them.") + " Looks calm, but action has no reaction, and no free energy describes it.";
-  $("crowdstory").textContent = t;
-}
-
 // ---------- loop ----------
 let t = 0;
 function frame() {
@@ -601,19 +514,16 @@ function frame() {
     wJ = wJ * DECAY + 4 * N;
     for (let s = 0; s < 4; s++) stepPlane(0.01);
     collect();
-    for (let s = 0; s < 3; s++) stepCrowd(0.02);
-    recordCrowd();
     t += 0.04;
   }
   frameNo++;
   showSwirl();
   if (frameNo % 4 === 0) { drawGrid($("dmeas"), steady() ? null : dens, true); drawGrid($("dpred"), steady() ? null : predGrid, false); }
   drawPlane();
-  drawCrowd();
   requestAnimationFrame(frame);
 }
 
-seedPlane(); seedCrowd();
+seedPlane();
 applyPreset(0);
 requestAnimationFrame(frame);
 </script>
