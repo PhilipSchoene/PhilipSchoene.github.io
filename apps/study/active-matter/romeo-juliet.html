@@ -63,6 +63,15 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .verdict .v{font:600 22px/1.25 var(--display);letter-spacing:-.02em;margin-bottom:6px}
 .verdict p{font-size:15px;margin:0 0 8px}
 .verdict .u{overflow-x:auto;padding:4px 0}
+.blk{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.blk h3{font:600 12px/1.3 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.blk h3 span{text-transform:none;letter-spacing:0;font-weight:400}
+.blk .m{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+.blk .m .katex-display{margin:.6em 0}
+.dist{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0 12px}
+.dist figure{margin:0}
+.dist canvas{aspect-ratio:1/1;background:var(--bg);border-radius:10px}
+.dist figcaption{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
 .swirl{display:flex;align-items:center;gap:14px;margin-top:14px;font-size:14px}
 .meter{flex:1;height:2px;background:var(--line);position:relative;border-radius:2px}
 .meter i{position:absolute;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--ink);transform:translateX(-50%);transition:left .15s linear}
@@ -237,44 +246,208 @@ function eigen() {
   const tr = P.a + P.d, disc = (P.a - P.d) ** 2 + 4 * P.b * P.c;
   return { complex: disc < -1e-9, tr, disc };
 }
+const num = x => (x < 0 ? "(" + fmt(x) + ")" : fmt(x));      // a number ready to plug into a formula
+
+// Is there a steady state to measure?
+function steady() {
+  const e = eigen(), maxRe = e.tr / 2 + (e.disc > 0 ? Math.sqrt(e.disc) / 2 : 0);
+  if (P.e > 0) return "";
+  if (maxRe > 1e-9) return "No saturation and an unstable direction: love (or hate) grows exponentially. No steady state, so nothing to measure.";
+  if (maxRe > -1e-9) return P.T > 0 ? "Marginal: without saturation the noise pumps feelings up forever. No steady state, so nothing to measure." : "Marginal: pure cycles that never decay.";
+  return "";
+}
 
 function verdict() {
-  const k = kind(), e = eigen();
+  const k = kind(), e = eigen(), mR = mobR(), mJ = mobJ();
+  const vari = k === "yes" || k === "apart";
   let v, body;
   if (k === "yes") {
     v = "Variational.";
-    body = R`\(b\) and \(c\) share a sign. With responsiveness \(\mu_R = ${fmt(mobR())}\), \(\mu_J = ${fmt(mobJ())}\) both lovers move straight downhill on`;
+    body = R`\(b\) and \(c\) share a sign. With responsiveness \(\mu_R = ${fmt(mR)}\), \(\mu_J = ${fmt(mJ)}\) both lovers move straight downhill, \(\dot R = -\mu_R\,\partial_R U\) and \(\dot J = -\mu_J\,\partial_J U\), on`;
   } else if (k === "apart") {
     v = "Variational.";
     body = R`They ignore each other: two separate wells, one each.`;
   } else if (k === "no") {
     v = "Not variational.";
-    body = R`\(b\) and \(c\) have opposite signs: one is drawn in, the other pushed away. A potential would need a negative responsiveness. The probability swirls and never settles.`;
+    body = R`\(b\) and \(c\) have opposite signs: one is drawn in, the other pushed away. A potential would need a negative responsiveness.`;
   } else {
     v = "Not variational.";
     body = (P.b === 0 ? "Juliet" : "Romeo") + " responds, " + (P.b === 0 ? "Romeo" : "Juliet") + " does not. A one-way coupling has no potential.";
   }
-  const extra = e.complex ? R` Complex eigenvalues at the origin: relaxation spirals, which no gradient flow can do.` : "";
-  $("verdict").innerHTML = `<div class="v">${v}</div><p>${rich(body)}${k === "yes" || k === "apart" ? "" : rich(extra)}</p>` +
-    (k === "yes" || k === "apart" ? `<div class="u">${tex(potentialTeX(), true)}</div>` : "") +
-    `<div class="swirl"><span>Swirl</span><div class="meter"><i id="needle" style="left:50%"></i></div><b id="swirl">0</b></div><p class="small muted" id="nosteady" style="margin:10px 0 0"></p>`;
+
+  // Jacobian, and the same matrix with each row divided by that lover's responsiveness
+  const offR = P.b / mR, offJ = P.c / mJ;
+  const jac = R`\mathcal J = \begin{pmatrix}\partial_R\dot R & \partial_J\dot R\\ \partial_R\dot J & \partial_J\dot J\end{pmatrix} = \begin{pmatrix} a - 3\varepsilon R^2 & b\\ c & d - 3\varepsilon J^2\end{pmatrix}`;
+  const jac0 = R`\mathcal J(0,0) = \begin{pmatrix} ${fmt(P.a)} & ${fmt(P.b)}\\ ${fmt(P.c)} & ${fmt(P.d)}\end{pmatrix}`;
+  const mjac = R`M^{-1}\mathcal J(0,0) = \begin{pmatrix} a/\mu_R & b/\mu_R\\ c/\mu_J & d/\mu_J\end{pmatrix} = \begin{pmatrix} ${fmt(P.a / mR)} & ${fmt(offR)}\\ ${fmt(offJ)} & ${fmt(P.d / mJ)}\end{pmatrix}`;
+  const jacText = vari
+    ? R`Off-diagonals agree: \(b/\mu_R = c/\mu_J = ${fmt(offR)}\). Symmetric, so it is a Hessian: \(M^{-1}\mathcal J = -\nabla\nabla U\). The saturation only touches the diagonal, so this holds everywhere, not just at the origin.`
+    : R`Off-diagonals differ: \(b/\mu_R = ${fmt(offR)}\) but \(c/\mu_J = ${fmt(offJ)}\). The antisymmetric part, \(${fmt((offR - offJ) / 2)}\), is a curl. No \(U\) has a curl, and no positive \(\mu\) can remove it.`;
+
+  // Eigenvalues at the origin
+  const sq = Math.sqrt(Math.abs(e.disc));
+  const lam = e.complex
+    ? `${fmt(e.tr / 2)} \\pm ${fmt(sq / 2)}\\,i`
+    : R`${fmt((e.tr + sq) / 2)}, \quad ${fmt((e.tr - sq) / 2)}`;
+  const eig = R`\begin{aligned}\lambda_\pm &= \tfrac12\Big[(a+d) \pm \sqrt{(a-d)^2 + 4bc}\,\Big]\\ &= \tfrac12\Big[${num(e.tr)} \pm \sqrt{${fmt(e.disc)}}\,\Big] = ${lam}\end{aligned}`;
+  const eigText = e.complex
+    ? R`Complex: \(4bc < -(a-d)^2\), which needs \(bc < 0\). The couple rotates. A gradient flow cannot: its \(\mathcal J = -M\nabla\nabla U\) is similar to the symmetric \(-M^{1/2}\nabla\nabla U\,M^{1/2}\), so its eigenvalues are real.`
+    : vari
+      ? R`Real, as they must be for a gradient flow: \(bc > 0\) (or \(b = c = 0\)) makes the square root real.`
+      : R`Real, and still not variational. Real eigenvalues are necessary, not sufficient: the curl above is what decides.`;
+
+  // Swirl
+  const swirlF = R`\begin{aligned} S &= \langle R\dot J - J\dot R\rangle = \langle R f_J - J f_R\rangle\\ &= c\langle R^2\rangle + (d-a)\langle RJ\rangle - b\langle J^2\rangle + \varepsilon\langle RJ(R^2 - J^2)\rangle\end{aligned}`;
+  const swirlText = vari
+    ? R`Why it vanishes: in equilibrium the probability current \(f P - \mu T\nabla P\) is zero, so \(f_J P = \mu_J T\,\partial_J P\). Then \(\langle R f_J\rangle = \mu_J T\!\int\! R\,\partial_J P = 0\) by parts, likewise \(\langle J f_R\rangle = 0\). Each term may be non-zero; the sum is exactly zero.`
+    : R`Without \(U\), \(f\) is not \(\mu T\,\nabla\ln P\). The current survives and circulates, and the terms no longer cancel.`;
+
+  // Distribution
+  const distF = vari
+    ? R`P(R,J) \propto e^{-U/T}, \qquad T = ${fmt(P.T)}`
+    : R`\nabla\cdot\big(f P - D\nabla P\big) = 0, \qquad f P - D\nabla P \neq 0`;
+  const distText = vari
+    ? R`Boltzmann, with the \(U\) above. Left: what the 400 couples actually do. Right: the prediction. The arrows show the measured probability current; here they should shrink to nothing.`
+    : R`No \(U\), so no Boltzmann form to predict. The steady state only needs zero divergence of the current, not zero current. The arrows show it circulating.`;
+
+  $("verdict").innerHTML = `
+    <div class="v">${v}</div><p>${rich(body)}</p>
+    ${vari ? `<div class="u">${tex(potentialTeX(), true)}</div>` : ""}
+    <p class="small muted" id="nosteady"></p>
+
+    <div class="blk"><h3>Jacobian <span>(𝒥, not Juliet)</span></h3>
+      <div class="m">${tex(jac, true)}</div>
+      <div class="m">${tex(jac0, true)}</div>
+      <div class="m">${tex(mjac, true)}</div>
+      <p>${rich(jacText)}</p></div>
+
+    <div class="blk"><h3>Eigenvalues at the origin</h3>
+      <div class="m">${tex(eig, true)}</div>
+      <p>${rich(eigText)}</p></div>
+
+    <div class="blk"><h3>Swirl</h3>
+      <div class="m">${tex(swirlF, true)}</div>
+      <div class="m" id="swirlnum"></div>
+      <div class="swirl"><span>S</span><div class="meter"><i id="needle" style="left:50%"></i></div><b id="swirl">0</b></div>
+      <p style="margin-top:12px">${rich(swirlText)}</p></div>
+
+    <div class="blk"><h3>Distribution</h3>
+      <div class="m">${tex(distF, true)}</div>
+      <div class="dist">
+        <figure><canvas id="dmeas"></canvas><figcaption>Measured, with current</figcaption></figure>
+        <figure><canvas id="dpred"></canvas><figcaption>${vari ? "Predicted, e<sup>−U/T</sup>" : "No U, no prediction"}</figcaption></figure>
+      </div>
+      <p>${rich(distText)}</p></div>`;
+  predGrid = vari ? predicted() : null;
+}
+
+// ---------- measurements ----------
+const NB = 40, NA = 10, DECAY = 0.996;
+let dens = new Float64Array(NB * NB), jxs = new Float64Array(NA * NA), jys = new Float64Array(NA * NA);
+let wJ = 0, mom = [0, 0, 0, 0], momFresh = true, predGrid = null, frameNo = 0;
+
+function resetStats() { dens.fill(0); jxs.fill(0); jys.fill(0); wJ = 0; mom = [0, 0, 0, 0]; momFresh = true; }
+
+function predicted() {
+  if (P.T <= 0) return null;
+  const k = kind(), mR = mobR(), mJ = mobJ(), s = k === "yes" ? Math.sign(P.b) : 0;
+  const U = (r, j) => -P.a * r * r / (2 * mR) - P.d * j * j / (2 * mJ) - s * r * j + P.e * (r ** 4 / mR + j ** 4 / mJ) / 4;
+  const g = new Float64Array(NB * NB); let mn = Infinity;
+  for (let y = 0; y < NB; y++) for (let x = 0; x < NB; x++) {
+    const r = -L + (x + .5) * 2 * L / NB, j = L - (y + .5) * 2 * L / NB;
+    g[y * NB + x] = U(r, j); mn = Math.min(mn, g[y * NB + x]);
+  }
+  for (let i = 0; i < g.length; i++) g[i] = Math.exp(-(g[i] - mn) / P.T);
+  return g;
+}
+
+function collect() {
+  // histogram of where the couples are
+  for (let i = 0; i < dens.length; i++) dens[i] *= DECAY;
+  let m = [0, 0, 0, 0];
+  for (let i = 0; i < N; i++) {
+    const r = X[i], j = Y[i];
+    m[0] += r * r; m[1] += r * j; m[2] += j * j; m[3] += r * j * (r * r - j * j);
+    const bx = Math.floor((r + L) / (2 * L) * NB), by = Math.floor((L - j) / (2 * L) * NB);
+    if (bx >= 0 && bx < NB && by >= 0 && by < NB) dens[by * NB + bx] += 1;
+  }
+  m = m.map(x => x / N);
+  if (momFresh) { mom = m; momFresh = false; } else mom = mom.map((x, i) => x + (m[i] - x) * 0.03);
+}
+
+function showSwirl() {
+  const el = $("swirl"); if (!el) return;
+  const msg = steady();
+  $("nosteady").textContent = msg;
+  if (msg) { el.textContent = "—"; $("needle").style.left = "50%"; $("swirlnum").innerHTML = ""; return; }
+  const [RR, RJ, JJ, Q] = mom;
+  const S = P.c * RR + (P.d - P.a) * RJ - P.b * JJ + P.e * Q;
+  el.textContent = (S >= 0 ? "+" : "") + S.toFixed(2);
+  $("needle").style.left = (50 + 50 * Math.tanh(S / 2)) + "%";
+  if (frameNo % 12 === 0) {
+    const f2 = x => (Math.round(x * 100) / 100).toFixed(2);
+    const n2 = x => (x < 0 ? "(" + f2(x) + ")" : f2(x));
+    $("swirlnum").innerHTML = tex(R`= ${num(P.c)}\cdot ${n2(RR)} + ${num(P.d - P.a)}\cdot ${n2(RJ)} - ${num(P.b)}\cdot ${n2(JJ)} + ${fmt(P.e)}\cdot ${n2(Q)} = ${f2(S)}`, true);
+  }
+}
+
+function drawGrid(cv, g, arrows) {
+  if (!cv) return;
+  const { w, h, dpr } = sizeCanvas(cv), c = cv.getContext("2d");
+  const ink = css("--ink"), faint = css("--faint"), muted = css("--muted");
+  c.clearRect(0, 0, w, h);
+  if (!g) {
+    c.fillStyle = muted; c.font = `${12 * dpr}px ${css("--font")}`; c.textAlign = "center";
+    c.fillText(P.T <= 0 && kind() !== "no" && kind() !== "oneway" ? "T = 0: no spread" : "—", w / 2, h / 2);
+    return;
+  }
+  let mx = 0; for (const v of g) mx = Math.max(mx, v);
+  const cw = w / NB, ch = h / NB;
+  c.fillStyle = ink;
+  if (mx > 0) for (let i = 0; i < g.length; i++) {
+    const a = g[i] / mx; if (a < 0.01) continue;
+    c.globalAlpha = Math.pow(a, 0.7) * 0.85;
+    c.fillRect((i % NB) * cw, Math.floor(i / NB) * ch, cw + .5, ch + .5);
+  }
+  c.globalAlpha = 1;
+  c.strokeStyle = faint; c.lineWidth = dpr;
+  c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w, h / 2); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
+  if (!arrows || wJ <= 0) return;
+  // probability current per coarse cell, relative to a uniform density
+  const aw = w / NA, ah = h / NA, scale = NA * NA / wJ;
+  c.strokeStyle = css("--bg"); c.lineWidth = 3.2 * dpr; c.lineCap = "round";
+  for (const pass of [0, 1]) {
+    if (pass) { c.strokeStyle = ink; c.lineWidth = 1.4 * dpr; }
+    c.beginPath();
+    for (let i = 0; i < NA * NA; i++) {
+      const jx = jxs[i] * scale, jy = jys[i] * scale, m = Math.hypot(jx, jy);
+      if (m < 0.4) continue;
+      const len = Math.min(0.9, m * 0.1) * aw, ux = jx / m, uy = -jy / m;
+      const x0 = (i % NA + .5) * aw - ux * len / 2, y0 = (Math.floor(i / NA) + .5) * ah - uy * len / 2;
+      const x1 = x0 + ux * len, y1 = y0 + uy * len, hd = 4 * dpr, an = Math.atan2(uy, ux);
+      c.moveTo(x0, y0); c.lineTo(x1, y1);
+      c.lineTo(x1 - hd * Math.cos(an - .5), y1 - hd * Math.sin(an - .5));
+      c.moveTo(x1, y1); c.lineTo(x1 - hd * Math.cos(an + .5), y1 - hd * Math.sin(an + .5));
+    }
+    c.stroke();
+  }
 }
 
 function changed(params) {
   syncSliders();
-  if (params) verdict();
-  swirlEMA = 0;
+  verdict();                               // cheap; also refreshes the prediction when T changes
+  resetStats();
   crowdText();
 }
 
 // ---------- love plane ----------
 const plane = $("plane"), pctx = plane.getContext("2d");
 const N = 400, L = 4;                    // couples, view range ±L
-let X = new Float64Array(N), Y = new Float64Array(N), trail = [], swirlEMA = 0;
+let X = new Float64Array(N), Y = new Float64Array(N), trail = [];
 
 function seedPlane() {
   for (let i = 0; i < N; i++) { X[i] = (Math.random() * 2 - 1) * 2.5; Y[i] = (Math.random() * 2 - 1) * 2.5; }
-  X[0] = 2; Y[0] = 0.5; trail = []; swirlEMA = 0;
+  X[0] = 2; Y[0] = 0.5; trail = []; resetStats();
 }
 function fR(r, j) { return P.a * r + P.b * j - P.e * r * r * r; }
 function fJ(r, j) { return P.c * r + P.d * j - P.e * j * j * j; }
@@ -285,33 +458,13 @@ function stepPlane(dt) {
     const r = X[i], j = Y[i];
     X[i] = r + fR(r, j) * dt + sR * gauss();
     Y[i] = j + fJ(r, j) * dt + sJ * gauss();
+    const xm = (r + X[i]) / 2, ym = (j + Y[i]) / 2;           // midpoint: Stratonovich current
+    const bx = Math.floor((xm + L) / (2 * L) * NA), by = Math.floor((L - ym) / (2 * L) * NA);
+    if (bx >= 0 && bx < NA && by >= 0 && by < NA) { jxs[by * NA + bx] += (X[i] - r) / dt; jys[by * NA + bx] += (Y[i] - j) / dt; }
     if (!isFinite(X[i]) || Math.abs(X[i]) > 50) X[i] = Math.sign(X[i]) * 50 || 0;
     if (!isFinite(Y[i]) || Math.abs(Y[i]) > 50) Y[i] = Math.sign(Y[i]) * 50 || 0;
   }
 }
-function measureSwirl() {
-  // <R f_J - J f_R>: the noise averages out, so the drift gives a quiet estimate.
-  let s = 0;
-  for (let i = 0; i < N; i++) s += X[i] * fJ(X[i], Y[i]) - Y[i] * fR(X[i], Y[i]);
-  s /= N;
-  swirlEMA += (s - swirlEMA) * 0.03;
-  const el = $("swirl"), nd = $("needle");
-  const e = eigen(), maxRe = e.tr / 2 + (e.disc > 0 ? Math.sqrt(e.disc) / 2 : 0);
-  if (el && P.e === 0 && maxRe > -1e-9) {
-    el.textContent = "—";
-    nd.style.left = "50%";
-    $("nosteady").textContent = maxRe > 1e-9
-      ? "No saturation and an unstable direction: love (or hate) grows exponentially. No steady state, so no swirl to measure."
-      : (P.T > 0 ? "Marginal: without saturation the noise pumps feelings up forever. No steady state, so no swirl to measure." : "Marginal: pure cycles that never decay. Add noise and they drift off for good.");
-    return;
-  }
-  if ($("nosteady")) $("nosteady").textContent = "";
-  if (el) {
-    el.textContent = (swirlEMA >= 0 ? "+" : "") + swirlEMA.toFixed(2);
-    nd.style.left = (50 + 50 * Math.tanh(swirlEMA / 2)) + "%";
-  }
-}
-
 function sizeCanvas(cv) {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
   const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
@@ -444,12 +597,17 @@ function crowdText() {
 let t = 0;
 function frame() {
   if (running) {
+    for (let i = 0; i < NA * NA; i++) { jxs[i] *= DECAY; jys[i] *= DECAY; }
+    wJ = wJ * DECAY + 4 * N;
     for (let s = 0; s < 4; s++) stepPlane(0.01);
+    collect();
     for (let s = 0; s < 3; s++) stepCrowd(0.02);
     recordCrowd();
     t += 0.04;
-    measureSwirl();
   }
+  frameNo++;
+  showSwirl();
+  if (frameNo % 4 === 0) { drawGrid($("dmeas"), steady() ? null : dens, true); drawGrid($("dpred"), steady() ? null : predGrid, false); }
   drawPlane();
   drawCrowd();
   requestAnimationFrame(frame);
