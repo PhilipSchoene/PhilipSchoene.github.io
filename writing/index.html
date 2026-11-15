@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Writing — Philip Schoene</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="name" href="../">Philip Schoene</a>
+    <nav>
+      <a href="./" aria-current="page">Writing</a>
+      <a href="../apps/">Apps</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Writing</h1>
+    <ul class="list" id="posts"></ul>
+  </main>
+
+  <script src="../assets/content.js"></script>
+  <script>
+    var list = document.getElementById("posts");
+    var fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+    if (!SITE.posts.length) list.outerHTML = '<p class="empty">Nothing yet.</p>';
+
+    SITE.posts.forEach(function (p) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "posts/" + p.file;
+      var t = document.createElement("span");
+      t.className = "title";
+      t.textContent = p.title;
+      var d = document.createElement("time");
+      d.className = "meta";
+      d.dateTime = p.date;
+      d.textContent = fmt.format(new Date(p.date + "T12:00:00"));
+      a.append(t, d);
+      li.append(a);
+      list.append(li);
+    });
+  </script>
+</body>
+</html>

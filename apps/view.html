@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Apps — Philip Schoene</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body class="viewer">
+  <div class="bar">
+    <div class="left"><a href="./">← Apps</a></div>
+    <div class="label" id="label"></div>
+    <div class="right">
+      <button id="prev" type="button" aria-label="Previous app">‹</button>
+      <button id="next" type="button" aria-label="Next app">›</button>
+      <a id="solo" href="#" target="_blank" rel="noopener" aria-label="Open on its own">↗</a>
+    </div>
+  </div>
+  <iframe id="frame" title="App"></iframe>
+
+  <script src="../assets/content.js"></script>
+  <script>
+    var apps = SITE.apps;
+    var frame = document.getElementById("frame");
+    var label = document.getElementById("label");
+    var solo = document.getElementById("solo");
+
+    function indexOf(slug) {
+      for (var i = 0; i < apps.length; i++) if (apps[i].slug === slug) return i;
+      return -1;
+    }
+
+    function show(i, push) {
+      if (!apps.length) { location.replace("./"); return; }
+      i = (i + apps.length) % apps.length;
+      var app = apps[i];
+      // A fresh iframe each time, so the browser's Back button
+      // moves between apps instead of stepping through iframe history.
+      var next = document.createElement("iframe");
+      next.id = "frame";
+      next.title = app.title;
+      next.src = app.file;
+      frame.replaceWith(next);
+      frame = next;
+      solo.href = app.file;
+      label.textContent = app.title;
+      var count = document.createElement("span");
+      count.textContent = (i + 1) + " / " + apps.length;
+      label.append(count);
+      document.title = app.title + " — Philip Schoene";
+      var url = "?app=" + encodeURIComponent(app.slug);
+      if (push) history.pushState({ i: i }, "", url);
+      else history.replaceState({ i: i }, "", url);
+      current = i;
+    }
+
+    var current = indexOf(new URLSearchParams(location.search).get("app"));
+    show(current < 0 ? 0 : current, false);
+
+    document.getElementById("prev").onclick = function () { show(current - 1, true); };
+    document.getElementById("next").onclick = function () { show(current + 1, true); };
+    window.onpopstate = function (e) { if (e.state) show(e.state.i, false); };
+
+    // Arrow keys switch apps, but only while focus is on this bar, not inside the app.
+    document.addEventListener("keydown", function (e) {
+      if (e.target.closest && e.target.closest("input, textarea, select")) return;
+      if (e.key === "ArrowLeft") show(current - 1, true);
+      if (e.key === "ArrowRight") show(current + 1, true);
+    });
+  </script>
+</body>
+</html>

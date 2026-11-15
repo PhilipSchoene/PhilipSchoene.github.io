@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Apps — Philip Schoene</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="name" href="../">Philip Schoene</a>
+    <nav>
+      <a href="../writing/">Writing</a>
+      <a href="./" aria-current="page">Apps</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <h1>Apps</h1>
+    <ul class="list" id="apps"></ul>
+  </main>
+
+  <script src="../assets/content.js"></script>
+  <script>
+    var list = document.getElementById("apps");
+
+    if (!SITE.apps.length) list.outerHTML = '<p class="empty">Nothing yet.</p>';
+
+    SITE.apps.forEach(function (app) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "view.html?app=" + encodeURIComponent(app.slug);
+      var t = document.createElement("span");
+      t.className = "title";
+      t.textContent = app.title;
+      var n = document.createElement("span");
+      n.className = "meta";
+      n.textContent = app.note || "";
+      a.append(t, n);
+      li.append(a);
+      list.append(li);
+    });
+  </script>
+</body>
+</html>
