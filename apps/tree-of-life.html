@@ -1,23 +1,905 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tree of Life</title>
-  <style>
-    :root { color-scheme: light dark; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; text-align: center;
-           font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
-           background: #fff; color: #1d1d1f; }
-    @media (prefers-color-scheme: dark) { body { background: #000; color: #f5f5f7; } }
-    h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 8px; }
-    p { color: #86868b; margin: 0; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Baum des mehrzelligen Lebens</title>
+<meta name="description" content="Interaktiver Stammbaum des mehrzelligen Lebens: Aufspaltungszeiten, ausgestorbene und lebende Gruppen, mit Hydra als Bezugspunkt.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+<style>
+:root{
+  --bg:#ffffff;--ink:#1d1d1f;--muted:#86868b;--line:#aeaeb2;--panel:#ffffff;--border:#e8e8ed;
+  --accent:#1d1d1f;--hydra:#6e6e73;--ext:#a1a1a6;--chip:#f5f5f7;--alive:#1d1d1f;--mixed:#86868b;
+  --era1:#f5f5f7;--era2:#e8e8ed;
+  --peek:88px;color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000000;--ink:#f5f5f7;--muted:#86868b;--line:#636366;--panel:#000000;--border:#2c2c2e;
+  --accent:#f5f5f7;--hydra:#aeaeb2;--ext:#6e6e73;--chip:#1c1c1e;--alive:#f5f5f7;--mixed:#86868b;
+  --era1:#1c1c1e;--era2:#2c2c2e;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;display:flex;flex-direction:column;height:100dvh;overflow:hidden;background:var(--bg);color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
+header.top{padding:calc(8px + env(safe-area-inset-top)) 12px 0;flex:0 0 auto}
+h1{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:600;font-size:21px;letter-spacing:-0.02em;margin:4px 0 10px}
+#q{width:100%;font:inherit;font-size:16px;background:var(--chip);color:var(--ink);border:1px solid transparent;border-radius:10px;padding:10px 12px;outline:none}
+#q:focus{border-color:var(--border);background:var(--bg)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 12px 10px;scrollbar-width:none;flex:0 0 auto}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:0 0 auto;min-height:38px;border-radius:999px;padding:6px 14px;white-space:nowrap;
+  background:transparent;color:var(--ink);border:1px solid var(--border);font:inherit;font-size:14px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+@media (hover:hover){.chips button:not(.on):hover{background:var(--chip)}}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#treewrap{flex:1;overflow:auto;background:var(--panel);border-top:1px solid var(--border);overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#axiswrap{position:sticky;top:0;z-index:2;background:var(--panel);border-bottom:1px solid var(--border);width:max-content}
+#tree{padding-bottom:calc(var(--peek) + 40px)}
+svg{display:block}
+svg text{font-size:13px;fill:var(--ink)}
+.hit{fill:transparent;cursor:pointer}
+.br{stroke:var(--line);stroke-width:1.6;fill:none}
+.br.dash{stroke-dasharray:3 4}
+.br.hy{stroke:var(--hydra);stroke-width:2.6}
+.br.sel{stroke:var(--accent);stroke-width:3.4}
+.wedge{fill:var(--line);opacity:.28;pointer-events:none}
+.tog{cursor:pointer}
+.tog circle.v{fill:var(--panel);stroke:var(--line);stroke-width:1.4}
+.tog text{text-anchor:middle;font-size:13px;fill:var(--muted);font-weight:700;pointer-events:none}
+.lab{cursor:pointer}
+.lab.ext{fill:var(--ext);font-style:italic}
+.lab.hy{fill:var(--hydra);font-weight:700}
+.lab.sel{fill:var(--accent);font-weight:700}
+.ilab{font-size:11.5px;fill:var(--muted)}
+.dag{fill:var(--ext);font-weight:700}
+.ev{stroke:var(--muted);stroke-opacity:.45;stroke-dasharray:2 4}
+.lca{fill:var(--ink);stroke:var(--panel);stroke-width:2;pointer-events:none}
+.era text{font-size:10.5px;fill:var(--muted);pointer-events:none}
+.era rect{cursor:pointer}
+.tick{font-size:11px!important;fill:var(--muted)!important}
+.evsym{font-size:14px!important;cursor:pointer}
+@media (hover:hover){.lab:hover{text-decoration:underline}.tog:hover circle.v{stroke:var(--accent)}}
+
+/* Bottom-Sheet */
+.sheet{position:fixed;left:0;right:0;bottom:0;height:86dvh;z-index:10;display:flex;flex-direction:column;
+  background:var(--panel);border-radius:16px 16px 0 0;box-shadow:0 -1px 0 var(--border),0 -8px 30px rgba(0,0,0,.08);
+  transform:translateY(calc(100% - var(--peek) - env(safe-area-inset-bottom)));transition:transform .26s ease}
+.sheet.open{transform:translateY(0)}
+.sheet.closed{transform:translateY(100%)}
+.grab{flex:0 0 auto;padding:8px 16px 10px;touch-action:none;cursor:pointer;user-select:none}
+.bar{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.shead{display:flex;gap:12px;align-items:center;min-height:52px}
+.shead .emo{font-size:38px;line-height:1;flex:0 0 auto}
+.shead .nm{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:19px;font-weight:600;letter-spacing:-0.02em;line-height:1.2}
+.shead .s2{font-size:12.5px;color:var(--muted)}
+.chev{margin-left:auto;font-size:18px;color:var(--muted);transition:transform .26s}
+.sheet.open .chev{transform:rotate(180deg)}
+#panel{flex:1;overflow:auto;padding:0 16px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
+/* Bildrahmen: einheitliches Format 16:10, drei Darstellungsarten je nach Bild
+   cover   = Foto im passenden Format, füllt den Rahmen
+   contain = Foto mit stark abweichendem Format / geringer Auflösung, ganz sichtbar vor unscharfem Hintergrund
+   plate   = Zeichnung/Diagramm (PNG/SVG), ganz sichtbar auf heller Bildtafel */
+.media{margin:0 0 12px}
+.frame{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:var(--chip);isolation:isolate}
+.frame::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);pointer-events:none;z-index:3}
+.frame .ph{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;line-height:1;transition:opacity .25s;z-index:0}
+.frame.loading{background:linear-gradient(100deg,var(--chip) 30%,var(--panel) 50%,var(--chip) 70%);background-size:300% 100%;animation:shimmer 1.4s linear infinite}
+.frame.loading .ph{opacity:.35}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-200% 0}}
+.frame .bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(22px) saturate(1.15) brightness(.92);opacity:0;z-index:1;transition:opacity .3s}
+.frame img{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .3s;z-index:2}
+.frame.loaded img{opacity:1}
+.frame.loaded .ph{opacity:0}
+.frame.cover img{object-fit:cover;object-position:50% 40%}
+.frame.contain img{object-fit:contain}
+.frame.contain .bg{opacity:.9}
+.frame.plate{background:#f7f7f4}
+.frame.plate img{object-fit:contain;padding:14px}
+.media figcaption{font-size:11.5px;line-height:1.4;color:var(--muted);margin-top:6px;min-height:16px}
+.media figcaption a{color:var(--muted)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12.5px;margin:0 4px 4px 0;background:var(--chip);border:1px solid var(--border)}
+.b-alive{color:var(--alive)}.b-extinct{color:var(--ext)}.b-mixed{color:var(--mixed)}.b-mc{color:var(--ink)}
+.txt{margin:8px 0;max-width:68ch}
+.ex{margin:6px 0;color:var(--muted)}
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0;font-size:14px}
+dl.facts dt{color:var(--muted)}dl.facts dd{margin:0}
+.rel{border-left:2px solid var(--ink);padding:8px 12px;margin:12px 0;background:var(--chip);border-radius:0 8px 8px 0}
+#panel h3{font-size:13.5px;color:var(--muted);font-weight:600;margin:16px 0 4px}
+ul.subs{list-style:none;margin:0;padding:0}
+ul.subs li{min-height:44px;padding:8px;border-radius:8px;cursor:pointer;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border)}
+ul.subs li:active{background:var(--chip)}
+ul.subs .ti{flex:0 0 44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:8px;overflow:hidden;background:var(--chip);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+ul.subs .ti img{width:100%;height:100%;object-fit:cover;object-position:50% 40%}
+ul.subs .ti.plate{background:#f7f7f4}
+ul.subs .ti.plate img{object-fit:contain;padding:3px}
+ul.subs .st{margin-left:auto;font-size:12px;white-space:nowrap}
+.crumbs{font-size:14px;line-height:2.1}
+.lk{color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);padding:2px 0}
+.links{margin-top:14px;display:flex;gap:16px;flex-wrap:wrap}
+.links a{color:var(--ink);padding:6px 0}
+.help p,.help li{max-width:68ch}
+.help ul{padding-left:18px}
+#toast{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;
+  max-width:92vw;width:max-content;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+
+/* Desktop: Sheet wird zur Seitenleiste */
+@media (min-width:920px){
+  body{padding-right:400px}
+  .sheet{left:auto;top:0;width:400px;height:100dvh;border-radius:0;box-shadow:none;border-left:1px solid var(--border);transform:none!important}
+  .bar,.chev{display:none}
+  .grab{cursor:default;padding-top:16px}
+  #tree{padding-bottom:20px}
+}
+@media (prefers-reduced-motion:reduce){.sheet,.chev,#toast,.frame img,.frame .bg,.frame .ph{transition:none}.frame.loading{animation:none}}
+</style>
 </head>
 <body>
-  <div>
-    <h1>Tree of Life</h1>
-    <p>Placeholder. Replace this file with the real app.</p>
+<header class="top">
+  <h1>Baum des mehrzelligen Lebens</h1>
+  <input type="search" id="q" list="names" placeholder="Suchen, z. B. Krake, Volvox, Hai" aria-label="Gruppe suchen" enterkeyhint="search" autocomplete="off">
+  <datalist id="names"></datalist>
+</header>
+<nav class="chips" aria-label="Werkzeuge">
+  <button id="goHydra">Hydra</button>
+  <button id="goHuman">Mensch</button>
+  <button id="view">Nur Tiere (ab 800 Mio.)</button>
+  <button id="openAll">Alles auf</button>
+  <button id="closeAll">Alles zu</button>
+  <button id="scale">Zeit: gestaucht</button>
+  <button id="wider">Breiter</button>
+  <button id="narrower">Schmaler</button>
+  <button id="hy" class="on">Hydra-Pfad</button>
+  <button id="help">Lesehilfe</button>
+</nav>
+<div id="treewrap"><div id="axiswrap"></div><div id="tree"></div></div>
+<section class="sheet" id="sheet" aria-label="Details">
+  <div class="grab" id="grab" role="button" tabindex="0" aria-label="Details auf- oder zuklappen">
+    <div class="bar"></div>
+    <div class="shead" id="shead"></div>
   </div>
+  <div id="panel" aria-live="polite"></div>
+</section>
+<div id="toast" role="status"></div>
+<noscript><p style="padding:16px">Dieses Werkzeug braucht JavaScript.</p></noscript>
+<script>
+/* ===================== DATEN =====================
+ n: Name, l: lateinisch, e: Emoji, t: Zeitpunkt der Aufspaltung in Untergruppen (Mio. J.),
+ u: unsicher, f: erste Fossilien, x: ausgestorben (Mio. J.), mc: Mehrzelligkeit unabhängig entstanden,
+ d: Text, ex: Beispiel, w: englischer Wikipedia-Titel (für Foto), q: Bildsuche, c: Untergruppen */
+const ROOT = {n:'Eukaryoten', l:'Eukaryota', e:'🧫', t:1700, u:1, w:'Eukaryote',
+d:'Zellen mit Zellkern und Mitochondrien – entstanden aus einer Asgard-Archaee plus einem eingefangenen Bakterium. Wichtigste Lektion dieses Baums: Mehrzelligkeit wurde mehrmals unabhängig erfunden (★). Tiere sind nur eine Lösung von vielen.',
+ex:'Alles von Hefe bis Hydra', c:[
+ {n:'Amorphea', l:'Amorphea', e:'🧩', t:1500, u:1,
+  d:'Amöbozoen plus Opisthokonten (Tiere + Pilze). Der Name heißt „formlos“ – passt gut zu Amöben, weniger zu Elefanten.', c:[
+  {n:'Amöbozoen', l:'Amoebozoa', e:'🟡', t:1100, u:1,
+   d:'Kriechende Amöben mit Scheinfüßchen. Einige bauen bei Hunger mehrzellige Strukturen, indem sie zusammenkriechen.', c:[
+    {n:'Zelluläre Schleimpilze', l:'Dictyostelia', e:'🍡', mc:1, w:'Dictyostelium discoideum', q:'Dictyostelium',
+     d:'Einzelne Amöben aggregieren bei Hunger über cAMP-Spiralwellen zu einer „Schnecke“, dann zu einem Fruchtkörper. Die Stielzellen sterben für die Sporen. Biophysik-Klassiker der erregbaren Medien. Aggregative Mehrzelligkeit, unabhängig von Tieren.',
+     ex:'Dictyostelium discoideum'},
+    {n:'Echte Schleimpilze', l:'Myxogastria', e:'🟨', w:'Physarum polycephalum', q:'Physarum polycephalum',
+     d:'Eine riesige vielkernige Zelle (Plasmodium) – also kein echter Mehrzeller. Physarum findet kürzeste Wege durch Labyrinthe und hat im Experiment das Tokioter Bahnnetz nachgebaut.',
+     ex:'Physarum polycephalum'},
+    {n:'Nackte Amöben', l:'Tubulinea', e:'🫠', w:'Amoeba proteus', q:'Amoeba proteus',
+     d:'Die Schulbuch-Amöben. Bleiben einzellig und sind damit zufrieden.', ex:'Amoeba proteus'}
+  ]},
+  {n:'Opisthokonten', l:'Opisthokonta', e:'🍄', t:1200, u:1, w:'Opisthokont',
+   d:'Zellen mit einer hinteren Geißel, wie Spermien. Tiere und Pilze sind Schwestergruppen: Ein Steinpilz ist dir näher verwandt als jede Rose.', c:[
+   {n:'Pilzartige', l:'Holomycota', e:'🍄', t:1100, u:1, d:'Pilze plus ihre einzelligen Verwandten.', c:[
+     {n:'Nucleariiden', l:'Nucleariida', e:'🔵', w:'Nucleariid',
+      d:'Einzellige Amöben – die nächsten lebenden Verwandten der Pilze. So ungefähr sah der Pilz-Vorfahr aus.', ex:'Nuclearia'},
+     {n:'Pilze', l:'Fungi', e:'🍄', t:950, u:1, mc:1, w:'Fungus',
+      d:'Heterotroph, Zellwände aus Chitin, wachsen als Hyphennetz (Myzel). Komplexe Mehrzelligkeit mit Fruchtkörpern entstand v. a. bei den Dikarya – unabhängig von Tieren und Pflanzen.', c:[
+       {n:'Töpfchenpilze', l:'Chytridiomycota', e:'🐸',
+        d:'Ursprüngliche Pilze mit begeißelten Sporen. Ein Vertreter (Bd) verursacht gerade weltweit ein Amphibiensterben.', ex:'Batrachochytrium dendrobatidis'},
+       {n:'Jochpilze & Co', l:'Mucoromycota', e:'🍞',
+        d:'Schnell wachsende Schimmelpilze – der graue Flaum auf altem Brot.', ex:'Rhizopus (Brotschimmel)'},
+       {n:'Arbuskuläre Mykorrhizapilze', l:'Glomeromycota', e:'🌱',
+        d:'Leben in den Wurzeln der meisten Landpflanzen und tauschen Phosphat gegen Zucker. Halfen wahrscheinlich schon den ersten Pflanzen an Land.', ex:'Rhizophagus irregularis'},
+       {n:'Höhere Pilze', l:'Dikarya', e:'🍄', t:600, u:1,
+        d:'Zellen tragen zeitweise zwei getrennte Kerne. Hier entstehen die komplexen Fruchtkörper.', c:[
+         {n:'Schlauchpilze', l:'Ascomycota', e:'🍺',
+          d:'Größte Pilzgruppe: Hefe, Morcheln, Trüffel, Penicillium und die Pilzpartner der meisten Flechten.', ex:'Saccharomyces cerevisiae (Bäckerhefe)'},
+         {n:'Ständerpilze', l:'Basidiomycota', e:'🍄',
+          d:'Die typischen Hutpilze, aber auch Rost- und Brandpilze. Ein Hallimasch-Myzel in Oregon bedeckt mehrere km² und gilt als einer der größten Organismen.', ex:'Fliegenpilz (Amanita muscaria)'}
+       ]}
+     ]}
+   ]},
+   {n:'Holozoa', l:'Holozoa', e:'🐾', t:1100, u:1,
+    d:'Tiere plus ihre einzelligen Verwandten. Viele „Tier-Gene“ (Integrine, Cadherine, Tyrosinkinasen) gab es hier schon vor den Tieren. Die Evolution hat umgebaut, nicht neu erfunden.', c:[
+    {n:'Ichthyosporea', l:'Ichthyosporea', e:'🐟',
+     d:'Einzellige Parasiten von Fischen u. a. Sphaeroforma teilt den Kern vielfach in einer Riesenzelle und zellularisiert dann – erinnert an einen Insektenembryo.', ex:'Sphaeroforma arctica'},
+    {n:'Filozoa', l:'Filozoa', e:'🦠', t:1000, u:1, d:'Filasterea + Kragengeißeltiere + Tiere.', c:[
+      {n:'Filasterea', l:'Filasterea', e:'🦠', w:'Capsaspora owczarzaki', q:'Capsaspora',
+       d:'Kleine Amöben mit Filopodien. Capsaspora besitzt schon Integrine und bildet zeitweise Zellaggregate.', ex:'Capsaspora owczarzaki'},
+      {n:'Choanozoa', l:'Choanozoa', e:'🐾', t:900, u:1, d:'Kragengeißeltiere + Tiere.', c:[
+        {n:'Kragengeißeltiere', l:'Choanoflagellata', e:'🦠', w:'Choanoflagellate',
+         d:'Die nächsten lebenden Verwandten der Tiere. Sehen fast aus wie die Fresszellen (Choanocyten) der Schwämme. Salpingoeca bildet Rosetten-Kolonien – ausgelöst durch ein Bakterienmolekül.', ex:'Salpingoeca rosetta'},
+        {n:'Tiere', l:'Metazoa', e:'🐾', t:760, u:1, mc:1, w:'Animal',
+         d:'Vielzeller mit Kollagen-Matrix, Zell-Zell-Kontakten, Ei und Spermium und Embryonalentwicklung. Molekulare Uhren: Ursprung irgendwo bei 650–850 Mio. J.; eindeutige Fossilien erst ab ~575 Mio. J.', c:[
+          {n:'Ediacara-Biota', l:'Ediacara-Biota', e:'🪶', f:575, x:539, u:1, w:'Ediacaran biota', q:'Dickinsonia',
+           d:'Rätselhafte Weichkörperwesen vor dem Kambrium, oft gesteppt wie Luftmatratzen. Dickinsonia war ein Tier (Cholesterin-Spuren), vieles andere ist kaum einzuordnen. Keine natürliche Gruppe, hier als Sammelbox.', ex:'Dickinsonia, Charnia'},
+          {n:'Rippenquallen', l:'Ctenophora', e:'🌈',
+           d:'Schwimmen mit 8 Reihen verschmolzener Wimpern, fangen mit Klebzellen statt Nesselzellen – keine Quallen! Laut Genom-Syntenie (2023) wohl Schwester aller anderen Tiere; umstritten. Ihr Nervennetz ist ein Syncytium und evtl. unabhängig entstanden.', ex:'Mnemiopsis leidyi (Meerwalnuss)'},
+          {n:'Schwämme + Rest', l:'Benthozoa', e:'🌊', t:740, u:1,
+           d:'Alle Tiere außer den Rippenquallen – falls die „Rippenquallen zuerst“-Hypothese stimmt. Wenn nicht, wären die Schwämme die Schwester aller anderen.', c:[
+           {n:'Schwämme', l:'Porifera', e:'🧽', t:650, u:1, w:'Sponge',
+            d:'Filtrierer ohne echte Gewebe, Nerven oder Muskeln; Kragengeißelzellen pumpen Wasser durch Poren. Zerlegte Schwämme können sich aus Einzelzellen neu zusammensortieren.', c:[
+             {n:'Hornkieselschwämme', l:'Demospongiae', e:'🧽', w:'Demosponge',
+              d:'Die große Mehrheit der Schwammarten. Der Badeschwamm ist das Skelett eines solchen Tiers.', ex:'Spongia officinalis (Badeschwamm)'},
+             {n:'Glasschwämme', l:'Hexactinellida', e:'🧺', w:'Hexactinellid',
+              d:'Skelett aus Glasnadeln (SiO₂), die Licht leiten wie Glasfasern. Gewebe größtenteils ein Syncytium. Manche werden Jahrtausende alt.', ex:'Euplectella aspergillum (Gießkannenschwamm)'},
+             {n:'Kalkschwämme', l:'Calcarea', e:'⚪', w:'Calcareous sponge',
+              d:'Kleine Schwämme mit Nadeln aus Kalk.', ex:'Sycon'},
+             {n:'Homoscleromorpha', l:'Homoscleromorpha', e:'🟤',
+              d:'Kleine Gruppe, deren Gewebe (mit Basalmembran) unter Schwämmen am „tierähnlichsten“ ist.', ex:'Oscarella'},
+             {n:'Archaeocyathen', l:'Archaeocyatha', e:'🍷', f:525, x:510, u:1,
+              d:'Becherförmige Kalkschwämme des Kambriums – die ersten riffbildenden Tiere. Verschwanden noch im Kambrium wieder.', ex:'Archaeocyathus'}
+           ]},
+           {n:'ParaHoxozoa', l:'ParaHoxozoa', e:'🧬', t:700, u:1,
+            d:'Placozoa + Nesseltiere + Bilateria. Benannt nach den ParaHox-Genen.', c:[
+            {n:'Placozoa', l:'Placozoa', e:'🥞', w:'Trichoplax', q:'Trichoplax adhaerens',
+             d:'Trichoplax: ein ~1 mm großer Zellpfannkuchen mit nur einer Handvoll Zelltypen, ohne Nerven und Muskeln. Beliebt in der Biophysik (ultraschnelle Gewebe-Rissdynamik). Position im Baum umstritten.', ex:'Trichoplax adhaerens'},
+            {n:'Planulozoa', l:'Planulozoa', e:'🤝', t:670, u:1,
+             d:'Nesseltiere + Bilateria. Hier lebte der letzte gemeinsame Vorfahre von Hydra und dir – er hatte schon Nervenzellen, Wnt-Signalweg und Hox-artige Gene.', c:[
+             {n:'Nesseltiere', l:'Cnidaria', e:'🪼', t:600, u:1,
+              d:'Zwei Keimblätter, meist radiärsymmetrisch, eine Öffnung für Mund und After, und Nesselzellen: Deren Kapseln entladen mit über 5 Millionen g – einer der schnellsten Vorgänge der Biologie. Lebenszyklus oft Polyp ↔ Meduse.', c:[
+              {n:'Blumentiere', l:'Anthozoa', e:'🪸', t:560, u:1,
+               d:'Nur Polypen, nie Medusen. Bauen mit Algen-Symbionten die Korallenriffe.', c:[
+                {n:'Sechsstrahlige Korallen', l:'Hexacorallia', e:'🪸',
+                 d:'Seeanemonen und Steinkorallen. Nematostella ist neben Hydra das zweite große Cnidarier-Modell.', ex:'Nematostella vectensis'},
+                {n:'Achtstrahlige Korallen', l:'Octocorallia', e:'🌿',
+                 d:'Weichkorallen, Gorgonien, Seefedern – Polypen mit 8 gefiederten Tentakeln.', ex:'Seefeder (Pennatula)'},
+                {n:'Runzelkorallen', l:'Rugosa', e:'📯', f:460, x:252, u:1,
+                 d:'Paläozoische Korallen, oft hornförmig („Hornkorallen“). Am Ende des Perms ausgestorben.', ex:'Zaphrentis'},
+                {n:'Bödenkorallen', l:'Tabulata', e:'🍯', f:485, x:252, u:1,
+                 d:'Koloniale Riffkorallen mit wabenartigen Röhren. Ebenfalls Opfer des Perm-Trias-Sterbens.', ex:'Favosites („Honigwabenkoralle“)'}
+              ]},
+              {n:'Medusozoa i. w. S.', l:'Medusozoa + Endocnidozoa', e:'🪼', t:580, u:1, w:'Medusozoa',
+               d:'Die Linie mit (meist) freischwimmender Medusenphase – plus ihre extrem reduzierten parasitischen Verwandten.', c:[
+               {n:'Myxozoen', l:'Myxozoa', e:'🦠',
+                d:'Mikroskopische Parasiten, lange für Einzeller gehalten – tatsächlich extrem geschrumpfte Nesseltiere (ihre Polkapseln sind Nesselkapseln). Henneguya hat sogar das Mitochondriengenom verloren.', ex:'Myxobolus cerebralis (Drehkrankheit der Forellen)'},
+               {n:'Medusentiere', l:'Medusozoa', e:'🪼', t:550, u:1,
+                d:'Klassischer Generationswechsel: Polyp → Meduse.', c:[
+                {n:'Acraspeda', l:'Acraspeda', e:'🪼', d:'Schirm-, Würfel- und Stielquallen.', c:[
+                  {n:'Schirmquallen', l:'Scyphozoa', e:'🪼', q:'Aurelia aurita',
+                   d:'Die großen „echten“ Quallen am Strand. Der Polyp schnürt Mini-Medusen ab (Strobilation).', ex:'Ohrenqualle (Aurelia aurita)'},
+                  {n:'Würfelquallen', l:'Cubozoa', e:'☠️', w:'Box jellyfish',
+                   d:'Aktive Schwimmer mit 24 Augen, teils mit Linsen – ganz ohne Gehirn. Manche gehören zu den giftigsten Tieren.', ex:'Seewespe (Chironex fleckeri)'},
+                  {n:'Stielquallen', l:'Staurozoa', e:'🏆',
+                   d:'Sitzen mit einem Stiel fest – eine Meduse, die nie losschwimmt.', ex:'Haliclystus'}
+                ]},
+                {n:'Hydrozoen', l:'Hydrozoa', e:'🎐',
+                 d:'Meist kleine koloniale Polypen und winzige Medusen, extrem vielfältige Lebenszyklen. Fossile Hydrozoen-Medusen gibt es schon aus dem Kambrium (~500 Mio. J.).', c:[
+                  {n:'Trachylinae', l:'Trachylinae', e:'🎐', q:'Craspedacusta sowerbii',
+                   d:'Medusen mit reduziertem oder fehlendem Polypenstadium. Hierher gehört die Süßwasserqualle Craspedacusta.', ex:'Craspedacusta sowerbii'},
+                  {n:'Hydroidolina', l:'Hydroidolina', e:'🌿', d:'Der Großteil der Hydrozoen, meist mit Polypenkolonien.', c:[
+                    {n:'Staatsquallen', l:'Siphonophorae', e:'⛵',
+                     d:'Kolonien aus spezialisierten Teil-Individuen (Schwimmglocken, Fress- und Fangpolypen), die wie ein einziger Organismus funktionieren. Wo endet hier das Individuum?', ex:'Portugiesische Galeere (Physalia physalis)'},
+                    {n:'Thekate Hydroiden', l:'Leptothecata', e:'🌿',
+                     d:'Polypen mit schützender Chitinhülle (Theca), bilden federartige Kolonien.', ex:'Obelia'},
+                    {n:'Aplanulata', l:'Aplanulata', e:'🌱',
+                     d:'Hydrozoen ohne bewimperte Planula-Larve. Enthält Röhrenpolypen – und den Süßwasser-Aussteiger Hydra.', c:[
+                      {n:'Röhrenpolypen & Co', l:'Tubulariidae', e:'🌷', q:'Ectopleura larynx',
+                       d:'Marine Polypen mit zwei Tentakelkränzen, auf Steinen und Schiffsrümpfen.', ex:'Ectopleura larynx'},
+                      {n:'Süßwasserpolyp Hydra', l:'Hydra', e:'🌱', hy:1, w:'Hydra (genus)', q:'Hydra vulgaris',
+                       d:'Hat die Medusenphase ganz abgeschafft und lebt im Süßwasser. Drei Stammzelllinien, regeneriert aus Fragmenten, praktisch keine Alterung. Der Kopf-Organisator arbeitet mit Wnt – demselben Signalweg, der auch deine Körperachse anlegt.', ex:'Hydra vulgaris; Hydra viridissima (grün, mit Chlorella-Algen)'}
+                    ]}
+                  ]}
+                ]},
+                {n:'Conularien', l:'Conulariida', e:'🔺', f:540, x:200, u:1,
+                 d:'Pyramidenförmige Röhren mit Gitterstruktur, vermutlich mit Schirm- oder Stielquallen verwandt. Stellung unsicher.', ex:'Conularia'}
+               ]}
+              ]}
+             ]},
+             {n:'Zweiseitentiere', l:'Bilateria', e:'↔️', t:620, u:1,
+              d:'Links-rechts-Symmetrie, drittes Keimblatt (Mesoderm → Muskeln), Kopf mit Gehirnanlage. Etwa 99 % aller Tierarten.', c:[
+              {n:'Xenacoelomorpha', l:'Xenacoelomorpha', e:'🪱',
+               d:'Einfache Würmchen ohne After und Ausscheidungsorgane. Entweder Schwester aller anderen Bilateria oder vereinfachte Neumünder – heftig umstritten.', ex:'Symsagittifera roscoffensis (Pfefferminzwurm)'},
+              {n:'Nephrozoa', l:'Nephrozoa', e:'🫘', t:600, u:1,
+               d:'Bilateria mit Ausscheidungsorganen (Nephridien) und durchgehendem Darm. Spalten sich in Urmünder und Neumünder.', c:[
+               {n:'Urmünder', l:'Protostomia', e:'🐜', t:580, u:1, w:'Protostome',
+                d:'Klassisch: Der Urmund wird zum Mund. Die artenreichste Tiergruppe.', c:[
+                {n:'Häutungstiere', l:'Ecdysozoa', e:'🦗', t:560, u:1,
+                 d:'Wachsen durch Häutung ihrer Kutikula. Die Gruppe wurde erst 1997 durch DNA-Daten erkannt.', c:[
+                  {n:'Fadenwürmer', l:'Nematoda', e:'🪱', w:'Nematode', q:'Caenorhabditis elegans',
+                   d:'Wohl die zahlreichsten Tiere der Erde. C. elegans: 959 Körperzellen, jede Zellteilung kartiert.', ex:'Caenorhabditis elegans'},
+                  {n:'Panarthropoda', l:'Panarthropoda', e:'🐛', t:545, u:1, d:'Gegliederte Tiere mit Beinpaaren.', c:[
+                    {n:'Bärtierchen', l:'Tardigrada', e:'🐻', w:'Tardigrade',
+                     d:'Unter 1 mm, überleben ausgetrocknet (Kryptobiose) Vakuum, Strahlung und extreme Kälte.', ex:'Ramazzottius varieornatus'},
+                    {n:'Stummelfüßer', l:'Onychophora', e:'🐛',
+                     d:'Samtige Würmer mit Stummelbeinen, verschießen Klebschleim. Lebendes Modell dafür, wie frühe Arthropoden-Verwandte aussahen.', ex:'Peripatus'},
+                    {n:'Radiodonten', l:'Radiodonta', e:'🦐', f:520, x:400, u:1, q:'Anomalocaris',
+                     d:'Kambrische Spitzenräuber mit Greifanhängen und rundem Maul, z. B. Anomalocaris. Stammgruppe der Gliederfüßer.', ex:'Anomalocaris'},
+                    {n:'Gliederfüßer', l:'Arthropoda', e:'🦀', t:530, u:1, w:'Arthropod',
+                     d:'Außenskelett aus Chitin, gegliederte Beine. Die große Mehrheit aller bekannten Tierarten.', c:[
+                      {n:'Trilobiten', l:'Trilobita', e:'🪳', f:521, x:252, w:'Trilobite',
+                       d:'Ikonen des Paläozoikums: über 20.000 Arten in ~270 Mio. Jahren, Augen mit Kalzit-Linsen. Beim Perm-Trias-Sterben endgültig verschwunden.', ex:'Phacops'},
+                      {n:'Kieferklauenträger', l:'Chelicerata', e:'🕷️', t:500, u:1,
+                       d:'Mundwerkzeuge als Klauen (Cheliceren), keine Antennen.', c:[
+                        {n:'Spinnentiere', l:'Arachnida', e:'🕷️', w:'Arachnid',
+                         d:'Spinnen, Skorpione, Milben, Zecken. Spinnenseide ist ähnlich zugfest wie Stahl, bei viel geringerer Dichte.', ex:'Kreuzspinne (Araneus diadematus)'},
+                        {n:'Pfeilschwanzkrebse', l:'Xiphosura', e:'🧲', q:'Limulus polyphemus',
+                         d:'Keine Krebse! Blaues Blut (Hämocyanin), daraus wird der LAL-Test auf Bakteriengifte gemacht. Seit ~450 Mio. J. kaum verändert.', ex:'Limulus polyphemus'},
+                        {n:'Seeskorpione', l:'Eurypterida', e:'🦂', f:467, x:252, w:'Eurypterid',
+                         d:'Paläozoische Wasserräuber; Jaekelopterus wurde ~2,5 m lang – der größte bekannte Gliederfüßer.', ex:'Jaekelopterus rhenaniae'}
+                      ]},
+                      {n:'Mandibeltiere', l:'Mandibulata', e:'🦟', t:520, u:1,
+                       d:'Mit Kauwerkzeugen (Mandibeln) und Antennen.', c:[
+                        {n:'Tausendfüßer', l:'Myriapoda', e:'🐛',
+                         d:'Hundert- und Tausendfüßer. Rekord: Eumillipes persephone mit 1306 Beinen.', ex:'Steinläufer (Lithobius)'},
+                        {n:'Pancrustacea', l:'Pancrustacea', e:'🦐', t:510, u:1,
+                         d:'Krebse + Insekten. Merksatz: Insekten sind an Land gegangene Krebse.', c:[
+                          {n:'Krebstiere', l:'Crustacea', e:'🦞', w:'Crustacean',
+                           d:'Keine natürliche Gruppe, weil die Insekten mittendrin stecken. Vom Wasserfloh bis zum Hummer.', ex:'Daphnia, Hummer'},
+                          {n:'Insekten', l:'Hexapoda', e:'🐝', w:'Insect',
+                           d:'Über 1 Mio. beschriebene Arten und die ersten Flieger der Erdgeschichte. Die Riesenlibelle Meganeura (Karbon) hatte ~70 cm Spannweite.', ex:'Drosophila melanogaster'}
+                        ]}
+                      ]}
+                    ]}
+                  ]}
+                ]},
+                {n:'Spiralia', l:'Spiralia', e:'🐌', t:560, u:1,
+                 d:'Viele Vertreter mit Spiralfurchung im frühen Embryo.', c:[
+                  {n:'Plattwürmer', l:'Platyhelminthes', e:'🫓', w:'Flatworm', q:'Schmidtea mediterranea',
+                   d:'Ohne Leibeshöhle und Atemorgane. Planarien regenerieren aus winzigen Stücken (Neoblasten) – Hydras Konkurrenz im Regenerieren. Auch Band- und Saugwürmer.', ex:'Schmidtea mediterranea'},
+                  {n:'Rädertierchen', l:'Rotifera', e:'⚙️', w:'Rotifer',
+                   d:'Mikroskopisch, mit Wimpern-„Rädern“. Bdelloide Rädertiere leben seit Millionen Jahren ohne Männchen; eines wurde nach ~24.000 Jahren im Permafrost wiederbelebt.', ex:'Philodina'},
+                  {n:'Lophotrochozoa', l:'Lophotrochozoa', e:'🐚', t:545, u:1,
+                   d:'Weichtiere, Ringelwürmer, Armfüßer & Co; viele mit Trochophora-Larve oder Tentakelkranz.', c:[
+                    {n:'Ringelwürmer', l:'Annelida', e:'🪱', w:'Annelid',
+                     d:'Segmentierter Körper: Regenwurm, Blutegel, marine Borstenwürmer. Platynereis ist ein Evo-Devo-Modell mit sehr urtümlichem Genom.', ex:'Regenwurm (Lumbricus terrestris)'},
+                    {n:'Weichtiere', l:'Mollusca', e:'🐌', t:530, u:1,
+                     d:'Weicher Körper, Fuß, Mantel, meist Kalkschale und Raspelzunge (Radula).', c:[
+                      {n:'Schnecken', l:'Gastropoda', e:'🐌',
+                       d:'Größte Weichtiergruppe – im Meer, Süßwasser und an Land.', ex:'Weinbergschnecke (Helix pomatia)'},
+                      {n:'Muscheln', l:'Bivalvia', e:'🦪',
+                       d:'Zweiklappige Filtrierer, die den Kopf praktisch abgeschafft haben. Die Islandmuschel „Ming“ wurde 507 Jahre alt.', ex:'Miesmuschel (Mytilus edulis)'},
+                      {n:'Kopffüßer', l:'Cephalopoda', e:'🐙', t:470, u:1, w:'Cephalopod',
+                       d:'Räuber mit Fangarmen und großem Gehirn.', c:[
+                        {n:'Tintenfische', l:'Coleoidea', e:'🐙', q:'Octopus vulgaris',
+                         d:'Kraken, Kalmare, Sepien – Schale ins Innere verlegt oder verloren. Ein Krake hat ~500 Mio. Neuronen, die meisten in den Armen. Kameraaugen, konvergent zu unseren.', ex:'Octopus vulgaris'},
+                        {n:'Perlboote', l:'Nautiloidea', e:'🐚', w:'Nautiloid',
+                         d:'Gekammertes Außengehäuse zur Auftriebssteuerung. Im Paläozoikum riesig und vielfältig, heute nur noch Nautilus & Allonautilus.', ex:'Nautilus pompilius'},
+                        {n:'Ammoniten', l:'Ammonoidea', e:'🌀', f:410, x:66,
+                         d:'Gekammerte Spiralschalen, über 300 Mio. Jahre extrem häufig – perfekte Leitfossilien. Starben mit den Dinosauriern.', ex:'Dactylioceras'}
+                      ]}
+                    ]},
+                    {n:'Armfüßer', l:'Brachiopoda', e:'🥠', w:'Brachiopod',
+                     d:'Sehen aus wie Muscheln, sind aber keine (Schalen oben/unten statt links/rechts). Im Paläozoikum dominant, nach dem Perm-Trias-Sterben stark dezimiert.', ex:'Lingula'},
+                    {n:'Moostierchen', l:'Bryozoa', e:'🧩',
+                     d:'Winzige koloniale Filtrierer mit Tentakelkranz; die Kolonien sehen aus wie Moos oder Krusten.', ex:'Plumatella (Süßwasser)'}
+                  ]}
+                ]}
+               ]},
+               {n:'Neumünder', l:'Deuterostomia', e:'🐟', t:570, u:1, w:'Deuterostome',
+                d:'Klassisch: Der Urmund wird zum After, der Mund entsteht neu. Dazu gehören Seesterne – und du.', c:[
+                {n:'Ambulacraria', l:'Ambulacraria', e:'⭐', t:550, u:1, d:'Stachelhäuter + Kiemenlochtiere.', c:[
+                  {n:'Stachelhäuter', l:'Echinodermata', e:'⭐', w:'Echinoderm',
+                   d:'Seesterne, Seeigel, Seegurken. Erwachsen fünfstrahlig, aber die Larven sind bilateral – die Radiärsymmetrie ist sekundär! Wassergefäßsystem mit Saugfüßchen.', ex:'Seeigel (Strongylocentrotus purpuratus)'},
+                  {n:'Kiemenlochtiere', l:'Hemichordata', e:'🌰', w:'Hemichordate',
+                   d:'Eichelwürmer und Flügelkiemer, mit Kiemenspalten wie Fischembryonen. Die fossilen Graptolithen gehören hierher (wenige leben noch).', ex:'Saccoglossus kowalevskii'}
+                ]},
+                {n:'Chordatiere', l:'Chordata', e:'🐟', t:550, u:1, w:'Chordate',
+                 d:'Chorda (Stützstab), Rückennervenrohr, Kiemenspalten und Schwanz – zumindest im Embryo.', c:[
+                  {n:'Lanzettfischchen', l:'Cephalochordata', e:'🗡️', w:'Lancelet',
+                   d:'Kleine fischähnliche Filtrierer ohne echten Kopf und ohne Wirbel. Lange das Modell für den Wirbeltier-Vorfahren.', ex:'Branchiostoma lanceolatum'},
+                  {n:'Olfactores', l:'Olfactores', e:'👃', t:540, u:1, d:'Manteltiere + Wirbeltiere. Ja, wörtlich „die Riechenden“.', c:[
+                    {n:'Manteltiere', l:'Tunicata', e:'🫙', w:'Tunicate', q:'Ciona intestinalis',
+                     d:'Die nächsten Verwandten der Wirbeltiere! Die Larve sieht aus wie eine Kaulquappe mit Chorda; bei der Metamorphose zum festsitzenden Filtrierer baut sie ihr Larven-Nervensystem weitgehend ab. Einzige Tiere, die Cellulose herstellen.', ex:'Seescheide (Ciona intestinalis)'},
+                    {n:'Wirbeltiere', l:'Vertebrata', e:'🦴', t:500, u:1, w:'Vertebrate',
+                     d:'Schädel, Wirbelsäule, Neuralleiste – und frühe Genomverdopplungen, die Rohstoff für Neues lieferten.', c:[
+                      {n:'Rundmäuler', l:'Cyclostomata', e:'⭕', w:'Cyclostomi',
+                       d:'Neunaugen und Schleimaale – die letzten kieferlosen Wirbeltiere. Ein Schleimaal füllt in Sekunden einen Eimer mit Schleim.', ex:'Flussneunauge (Lampetra fluviatilis)'},
+                      {n:'Kieferlose Panzerfische', l:'Ostracodermi', e:'🛡️', f:480, x:359, u:1, w:'Ostracoderm',
+                       d:'Kieferlose Fische mit Knochenpanzer, Ordovizium bis Devon. Keine natürliche Gruppe.', ex:'Cephalaspis'},
+                      {n:'Kiefermäuler', l:'Gnathostomata', e:'🦷', t:450, u:1,
+                       d:'Kiefer (aus Kiemenbögen umgebaut) und paarige Flossen: fressen statt filtrieren.', c:[
+                        {n:'Plattenhäuter', l:'Placodermi', e:'🪖', f:440, x:359,
+                         d:'Gepanzerte Kieferfische des Devons, z. B. Dunkleosteus. Liefern die frühesten Belege für innere Befruchtung. Keine natürliche Gruppe; am Ende des Devons verschwunden.', ex:'Dunkleosteus'},
+                        {n:'Knorpelfische', l:'Chondrichthyes', e:'🦈',
+                         d:'Haie, Rochen, Chimären. Skelett aus Knorpel; Elektrosinn über Lorenzinische Ampullen.', ex:'Weißer Hai (Carcharodon carcharias)'},
+                        {n:'Knochenfische', l:'Osteichthyes', e:'🐟', t:425, u:1,
+                         d:'Knochenskelett, ursprünglich mit Lunge (bei vielen später Schwimmblase). Kladistisch gehören auch alle Landwirbeltiere dazu.', c:[
+                          {n:'Strahlenflosser', l:'Actinopterygii', e:'🐠', q:'Danio rerio',
+                           d:'Etwa die Hälfte aller Wirbeltierarten. Die Teleostier hatten eine zusätzliche Genomverdopplung.', ex:'Zebrafisch (Danio rerio)'},
+                          {n:'Fleischflosser', l:'Sarcopterygii', e:'💪', t:415, u:1,
+                           d:'Flossen mit kräftigem Knochenstiel – die Vorlage für Arme und Beine. Kladistisch bist du ein Fleischflosser-Fisch.', c:[
+                            {n:'Quastenflosser', l:'Actinistia', e:'🎏', w:'Coelacanth',
+                             d:'Galten als seit 66 Mio. J. ausgestorben, bis 1938 einer vor Südafrika gefangen wurde.', ex:'Latimeria chalumnae'},
+                            {n:'Lungenfische', l:'Dipnoi', e:'🫁', w:'Lungfish',
+                             d:'Die nächsten lebenden Fisch-Verwandten der Landwirbeltiere. Haben die größten bekannten Tiergenome (Südamerikanischer Lungenfisch ~91 Gb, ~30× menschliches).', ex:'Neoceratodus forsteri'},
+                            {n:'Tetrapodomorpha', l:'Tetrapodomorpha', e:'🚶', t:390, u:1, d:'Die Linie zu den Vierfüßern.', c:[
+                              {n:'Fisch-Vierfüßer-Übergang', l:'Tiktaalik & Co', e:'🐊', f:385, x:360, u:1, w:'Tiktaalik', q:'Tiktaalik',
+                               d:'„Fishapods“ des Devons wie Tiktaalik (~375 Mio. J.): Fisch mit Hals, handgelenkartigen Flossen und Lunge. Keine natürliche Gruppe.', ex:'Tiktaalik roseae'},
+                              {n:'Vierfüßer', l:'Tetrapoda', e:'🦎', t:350, u:1, w:'Tetrapod',
+                               d:'Vier Gliedmaßen mit Fingern und Zehen. Frühe Formen hatten 6–8 Finger; fünf hat sich durchgesetzt.', c:[
+                                {n:'Amphibien', l:'Lissamphibia', e:'🐸',
+                                 d:'Frösche, Salamander, Blindwühlen. Larven meist im Wasser, die Haut atmet mit. Der Axolotl regeneriert ganze Beine.', ex:'Axolotl (Ambystoma mexicanum)'},
+                                {n:'Amnioten', l:'Amniota', e:'🥚', t:318, w:'Amniote',
+                                 d:'Das Amnion-Ei mit eigenem „Aquarium“ machte die Fortpflanzung unabhängig vom Wasser. Im Karbon Spaltung in Säugerlinie und Reptilien-/Vogellinie.', c:[
+                                  {n:'Synapsiden', l:'Synapsida', e:'🐭', t:315, u:1, w:'Synapsid',
+                                   d:'Die Säugetierlinie (ein Schläfenfenster). Stellte im Perm die großen Landtiere – lange vor den Dinosauriern.', c:[
+                                    {n:'Nicht-Säuger-Synapsiden', l:'„Pelycosaurier“ & Therapsiden', e:'🦫', f:312, x:120, u:1, w:'Dimetrodon', q:'Dimetrodon',
+                                     d:'Z. B. Dimetrodon mit Rückensegel – kein Dinosaurier, sondern näher mit dir verwandt! Im Perm-Trias-Sterben stark dezimiert; letzte Cynodonten bis in die Kreide.', ex:'Dimetrodon'},
+                                    {n:'Säugetiere', l:'Mammalia', e:'🐭', t:180, u:1, w:'Mammal',
+                                     d:'Haare, Milchdrüsen, drei Gehörknöchelchen (aus Kieferknochen umgebaut!). Lebten über 100 Mio. Jahre eher klein im Schatten der Dinosaurier.', c:[
+                                      {n:'Kloakentiere', l:'Monotremata', e:'🦆', w:'Monotreme',
+                                       d:'Legen Eier und säugen trotzdem. Schnabeltier: Elektrosinn, Giftsporn. Die Evolution hatte offenbar einen lustigen Tag.', ex:'Schnabeltier (Ornithorhynchus anatinus)'},
+                                      {n:'Theria', l:'Theria', e:'🐨', t:160, u:1, d:'Lebendgebärende Säugetiere.', c:[
+                                        {n:'Beuteltiere', l:'Marsupialia', e:'🦘', w:'Marsupial',
+                                         d:'Winzige Neugeborene entwickeln sich im Beutel weiter. Vielfalt v. a. in Australien und Südamerika.', ex:'Rotes Riesenkänguru'},
+                                        {n:'Plazentatiere', l:'Placentalia', e:'🐘', t:100, u:1,
+                                         d:'Lange Tragzeit dank Plazenta. Ihre große Radiation folgte dem Asteroiden vor 66 Mio. J.', c:[
+                                          {n:'Afrotheria', l:'Afrotheria', e:'🐘',
+                                           d:'Afrikanischer Ursprung: Elefanten, Seekühe, Erdferkel, Tenreks – optisch null Ähnlichkeit, genetisch eine Familie.', ex:'Afrikanischer Elefant'},
+                                          {n:'Nebengelenktiere', l:'Xenarthra', e:'🦥',
+                                           d:'Faultiere, Gürteltiere, Ameisenbären – eine südamerikanische Linie.', ex:'Dreifinger-Faultier'},
+                                          {n:'Boreoeutheria', l:'Boreoeutheria', e:'🐕', t:90, u:1, d:'Die „nördlichen“ Plazentatiere.', c:[
+                                            {n:'Laurasiatheria', l:'Laurasiatheria', e:'🐋',
+                                             d:'Wale, Fledermäuse, Raubtiere, Huftiere, Igel. Wale sind Paarhufer – ihr nächster lebender Verwandter ist das Flusspferd.', ex:'Blauwal'},
+                                            {n:'Euarchontoglires (inkl. Mensch)', l:'Euarchontoglires', e:'🧑', hu:1,
+                                             d:'Nagetiere, Hasen, Spitzhörnchen und Primaten – also auch du. Maus und Mensch trennten sich vor grob 75–90 Mio. J.', ex:'Homo sapiens, Hausmaus'}
+                                          ]}
+                                        ]}
+                                      ]}
+                                    ]}
+                                  ]},
+                                  {n:'Reptilien (inkl. Vögel)', l:'Sauropsida', e:'🦎', t:290, u:1,
+                                   d:'Die zweite Amnioten-Linie. Kladistisch sind Vögel Reptilien.', c:[
+                                    {n:'Schuppenkriechtiere', l:'Lepidosauria', e:'🐍',
+                                     d:'Eidechsen, Schlangen und die Brückenechse (Tuatara). Schlangen sind Eidechsen, die ihre Beine verloren haben.', ex:'Zauneidechse'},
+                                    {n:'Fischsaurier', l:'Ichthyosauria', e:'🐬', f:248, x:90, u:1, w:'Ichthyosaur',
+                                     d:'Meeresreptilien, die konvergent fast wie Delfine aussahen – lange vor den Delfinen. Gebaren lebend. Stellung im Reptilienbaum unsicher.', ex:'Ichthyosaurus'},
+                                    {n:'Plesiosaurier', l:'Plesiosauria', e:'🦕', f:203, x:66, u:1,
+                                     d:'Meeresreptilien mit vier Flossen und oft langem Hals. Keine Dinosaurier. (Und nein, auch nicht in Loch Ness.)', ex:'Plesiosaurus'},
+                                    {n:'Archelosauria', l:'Archelosauria', e:'🐢', t:260, u:1,
+                                     d:'Schildkröten + Archosaurier (laut Genomdaten).', c:[
+                                      {n:'Schildkröten', l:'Testudines', e:'🐢', w:'Turtle',
+                                       d:'Panzer aus umgebauten Rippen. Genetisch näher an Krokodilen und Vögeln als an Eidechsen.', ex:'Galápagos-Riesenschildkröte'},
+                                      {n:'Archosaurier', l:'Archosauria', e:'🐊', t:250, u:1, w:'Archosaur',
+                                       d:'„Herrscherechsen“: Krokodilslinie und Vogel-/Dinolinie. Die großen Gewinner nach dem Perm-Trias-Sterben.', c:[
+                                        {n:'Krokodile', l:'Crocodylia', e:'🐊', w:'Crocodilia',
+                                         d:'Die nächsten lebenden Verwandten der Vögel! Ihre Linie war in der Trias viel vielfältiger, mit zweibeinigen Formen.', ex:'Nilkrokodil'},
+                                        {n:'Avemetatarsalia', l:'Avemetatarsalia', e:'🦖', t:245, u:1,
+                                         d:'Die Vogellinie der Archosaurier: Flugsaurier + Dinosaurier.', c:[
+                                          {n:'Flugsaurier', l:'Pterosauria', e:'🪁', f:228, x:66, w:'Pterosaur',
+                                           d:'Die ersten fliegenden Wirbeltiere; Flughaut an einem extrem verlängerten 4. Finger. Quetzalcoatlus: ~10 m Spannweite. Keine Dinosaurier.', ex:'Quetzalcoatlus northropi'},
+                                          {n:'Dinosaurier', l:'Dinosauria', e:'🦖', t:233, u:1, w:'Dinosaur',
+                                           d:'Aufrechte Beine unter dem Körper. Dominierten ~165 Mio. Jahre das Land – und leben als Vögel weiter.', c:[
+                                            {n:'Vogelbeckensaurier', l:'Ornithischia', e:'🦏', f:220, x:66, u:1,
+                                             d:'Pflanzenfresser: Triceratops, Stegosaurus, Ankylosaurus, Entenschnabelsaurier. Trotz des Namens nicht die Vorfahren der Vögel.', ex:'Triceratops'},
+                                            {n:'Sauropodomorpha', l:'Sauropodomorpha', e:'🦕', f:231, x:66,
+                                             d:'Langhalsige Riesen, die schwersten wohl um 70 t. Luftgefüllte Knochen wie bei Vögeln sparten Gewicht.', ex:'Brachiosaurus'},
+                                            {n:'Theropoden', l:'Theropoda', e:'🦖', t:165, u:1,
+                                             d:'Zweibeinige, meist räuberische Dinosaurier – viele mit Federn.', c:[
+                                              {n:'Nicht-Vogel-Theropoden', l:'Theropoda (ohne Vögel)', e:'🦖', x:66, w:'Tyrannosaurus', q:'Tyrannosaurus',
+                                               d:'T. rex, Velociraptor & Co. Starben vor 66 Mio. J. nach dem Chicxulub-Einschlag. Keine natürliche Gruppe.', ex:'Tyrannosaurus rex'},
+                                              {n:'Vögel', l:'Aves', e:'🐦', w:'Bird',
+                                               d:'Lebende Dinosaurier, rund 11.000 Arten. Eine Amsel ist mit T. rex näher verwandt als T. rex mit Stegosaurus.', ex:'Amsel (Turdus merula)'}
+                                            ]}
+                                          ]}
+                                        ]}
+                                      ]}
+                                    ]}
+                                  ]}
+                                ]}
+                              ]}
+                            ]}
+                          ]}
+                        ]}
+                      ]}
+                    ]}
+                  ]}
+                ]}
+               ]}
+              ]}
+             ]}
+            ]}
+           ]}
+          ]}
+        ]}
+      ]}
+    ]}
+   ]}
+  ]}
+ ]},
+ {n:'Diaphoretickes', l:'Diaphoretickes', e:'🌿', t:1500, u:1,
+  d:'Die andere große Hälfte der Eukaryoten: Pflanzen, Algen und viele Einzeller. Auch hier wurde Mehrzelligkeit mehrmals unabhängig erfunden (Rotalgen, Grünalgen, Landpflanzen, Braunalgen).', c:[
+  {n:'Pflanzen i. w. S.', l:'Archaeplastida', e:'🌱', t:1400, u:1,
+   d:'Entstanden durch die primäre Endosymbiose: Ein Eukaryot schluckte ein Cyanobakterium, das zum Chloroplasten wurde.', c:[
+   {n:'Glaucophyten', l:'Glaucophyta', e:'🔵', w:'Glaucophyte',
+    d:'Einzellige Süßwasseralgen, deren Plastiden noch eine Bakterien-Zellwand (Peptidoglycan) tragen – ein Fossil der Endosymbiose.', ex:'Cyanophora paradoxa'},
+   {n:'Rotalgen', l:'Rhodophyta', e:'🍣', f:1050, mc:1, w:'Red algae',
+    d:'Rot durch Phycoerythrin, meist im Meer. Bangiomorpha (~1,05 Mrd. J.) ist das älteste bekannte mehrzellige, sich sexuell fortpflanzende Lebewesen, das einer heutigen Gruppe zugeordnet werden kann. Liefern Nori und Agar – also deine Agarplatten.', ex:'Nori (Pyropia)'},
+   {n:'Grüne Pflanzen', l:'Viridiplantae', e:'🌿', t:1000, u:1,
+    d:'Chlorophyll a + b, Stärke als Speicher, Zellwände aus Cellulose.', c:[
+    {n:'Grünalgen (Chlorophyta)', l:'Chlorophyta', e:'🟢', mc:1, w:'Volvox', q:'Volvox',
+     d:'Vom Einzeller Chlamydomonas bis zur Kugelkolonie Volvox mit Arbeitsteilung zwischen Körper- und Keimzellen. Die Volvox-Linie wurde erst vor ~200 Mio. J. mehrzellig (Schätzung) – ein Lehrbuchmodell für die Evolution der Mehrzelligkeit.', ex:'Volvox carteri'},
+    {n:'Streptophyta', l:'Streptophyta', e:'🌿', t:900, u:1, d:'Armleuchteralgen & Co + Landpflanzen.', c:[
+     {n:'Charophyten', l:'Charophyta', e:'🕯️',
+      d:'Süßwasseralgen, keine natürliche Gruppe. Die Jochalgen (Zygnematophyceae) sind die nächsten Verwandten der Landpflanzen.', ex:'Armleuchteralge (Chara), Spirogyra'},
+     {n:'Landpflanzen', l:'Embryophyta', e:'🌱', t:480, u:1, mc:1, w:'Embryophyte',
+      d:'Der Embryo wird von der Mutterpflanze geschützt, eine Kutikula verhindert Austrocknung. Fossile Sporen ab ~470 Mio. J. Die vielzelligen Gewebe wurden im Streptophyten-Ast erfunden.', c:[
+      {n:'Moose', l:'Bryophyta s. l.', e:'🌿', w:'Bryophyte',
+       d:'Laub-, Leber- und Hornmoose. Ohne Leitgewebe, deshalb klein; die grüne Pflanze ist die haploide Generation.', ex:'Physcomitrium patens'},
+      {n:'Gefäßpflanzen', l:'Tracheophyta', e:'🌲', t:432, u:1, w:'Vascular plant',
+       d:'Leitgewebe mit Lignin – damit konnten Pflanzen in die Höhe wachsen. Es folgten Wälder, Kohle und große Änderungen der Atmosphäre.', c:[
+       {n:'Urfarne', l:'Rhyniophyta', e:'🥢', f:430, x:390, u:1, w:'Cooksonia', q:'Cooksonia',
+        d:'Blattlose, gabelig verzweigte Stängel, wenige cm hoch – z. B. Cooksonia. Frühe Landpflanzen des Silur und Devon.', ex:'Cooksonia'},
+       {n:'Bärlapppflanzen', l:'Lycopodiophyta', e:'🌿', w:'Lycophyte',
+        d:'Älteste noch lebende Linie der Gefäßpflanzen.', c:[
+        {n:'Bärlappe', l:'Lycopodiales', e:'🌿', w:'Lycopodium', q:'Lycopodium clavatum',
+         d:'Heute kleine, moosähnliche Pflanzen. Ihre Sporen dienten früher als Blitzpulver.', ex:'Keulen-Bärlapp'},
+        {n:'Schuppenbäume', l:'Lepidodendrales', e:'🌴', f:380, x:252, u:1, w:'Lepidodendron', q:'Lepidodendron',
+         d:'Bis ~40 m hohe Bärlappbäume der Karbon-Sumpfwälder. Ein großer Teil der Steinkohle stammt von ihnen.', ex:'Lepidodendron'}
+       ]},
+       {n:'Euphyllophyta', l:'Euphyllophyta', e:'🍃', t:400, u:1, w:'Euphyllophyte',
+        d:'Pflanzen mit großen „echten“ Blättern (Megaphylle).', c:[
+        {n:'Farne & Schachtelhalme', l:'Monilophyta', e:'🌿', w:'Fern',
+         d:'Sporenpflanzen mit Leitgewebe. Schachtelhalm-Verwandte (Calamites) wurden im Karbon baumgroß.', ex:'Wurmfarn, Acker-Schachtelhalm'},
+        {n:'Samenpflanzen', l:'Spermatophyta', e:'🌾', t:365, u:1, w:'Spermatophyte',
+         d:'Der Samen: Embryo mit Proviant in Schutzhülle – Fortpflanzung ohne Wasser, analog zum Amnion-Ei der Tiere.', c:[
+         {n:'Samenfarne', l:'„Pteridospermatophyta“', e:'🍂', f:360, x:100, u:1, w:'Pteridospermatophyta', q:'Glossopteris',
+          d:'Farnähnliche Pflanzen mit Samen, keine natürliche Gruppe. Die Glossopteris-Flora half, die Kontinentaldrift zu belegen.', ex:'Glossopteris'},
+         {n:'Nacktsamer', l:'Gymnospermae', e:'🌲', w:'Gymnosperm',
+          d:'Nadelbäume, Ginkgo, Palmfarne, Gnetophyten. Ginkgo ist der letzte Überlebende einer einst großen Gruppe.', ex:'Ginkgo biloba, Fichte'},
+         {n:'Blütenpflanzen', l:'Angiospermae', e:'🌸', w:'Flowering plant',
+          d:'Rund 300.000 Arten, Fruchtknoten umhüllt die Samen. Fossil ab ~130 Mio. J., dann explosive Ausbreitung in der Kreide – Darwins großes Rätsel. Koevolution mit Bestäubern.', ex:'Rose, Gras, Eiche'}
+        ]}
+       ]}
+      ]}
+     ]}
+    ]}
+   ]}
+  ]},
+  {n:'SAR', l:'SAR', e:'🧫', t:1300, u:1, w:'SAR supergroup',
+   d:'Stramenopile, Alveolaten, Rhizarien – gewaltige Einzellervielfalt. Die Braunalgen haben hier eigenständig Mehrzelligkeit erfunden.', c:[
+   {n:'Stramenopile', l:'Stramenopiles', e:'🌊', w:'Stramenopile',
+    d:'Zellen mit typischer behaarter Geißel. Viele tragen Plastiden einer geschluckten Rotalge (sekundäre Endosymbiose).', c:[
+    {n:'Braunalgen', l:'Phaeophyceae', e:'🥬', mc:1, w:'Brown algae', q:'Macrocystis pyrifera',
+     d:'Tang und Kelp – Riesentang wird bis ~45 m lang. Komplexe Mehrzelligkeit mit Geweben, völlig unabhängig von Pflanzen und Tieren; wann genau, ist unsicher.', ex:'Riesentang (Macrocystis pyrifera)'},
+    {n:'Kieselalgen', l:'Bacillariophyta', e:'💎', w:'Diatom',
+     d:'Einzeller in nanostrukturierten Glasschachteln. Liefern grob ein Fünftel der globalen Photosynthese.', ex:'Thalassiosira pseudonana'},
+    {n:'Eipilze', l:'Oomycota', e:'🥔', w:'Oomycete',
+     d:'Sehen aus wie Pilze, sind aber Verwandte der Braunalgen – klassische Konvergenz. Phytophthora löste die irische Hungersnot aus.', ex:'Phytophthora infestans'}
+   ]},
+   {n:'Alveolaten', l:'Alveolata', e:'🦠', w:'Alveolate',
+    d:'Wimpertierchen (Paramecium), Dinoflagellaten (Meeresleuchten) und Apicomplexa (Malaria-Erreger).', ex:'Paramecium caudatum'},
+   {n:'Rhizarien', l:'Rhizaria', e:'🔮',
+    d:'Foraminiferen und Radiolarien mit kunstvollen Skeletten – Haeckels Lieblinge.', ex:'Radiolarien'}
+  ]}
+ ]}
+]};
+
+/* Erdzeitalter (Mio. J.) & Ereignisse */
+const ERAS=[
+ ['Paläoproterozoikum',2500,1600,'#F74370'],['Mesoproterozoikum',1600,1000,'#FDB462'],['Tonium',1000,720,'#FEBF4E'],
+ ['Cryogenium (Schneeball-Erde)',720,635,'#FECC5C'],['Ediacarium',635,539,'#FED96A'],['Kambrium',539,485,'#7FA056'],
+ ['Ordovizium',485,444,'#009270'],['Silur',444,419,'#B3E1B6'],['Devon',419,359,'#CB8C37'],['Karbon',359,299,'#67A599'],
+ ['Perm',299,252,'#F04028'],['Trias',252,201,'#B168B1'],['Jura',201,145,'#34B2C9'],['Kreide',145,66,'#7FC64E'],
+ ['Paläogen',66,23,'#FD9A52'],['Neogen',23,2.6,'#FFE619'],['Quartär',2.6,0,'#F9F97F']];
+const EVENTS=[
+ {t:539,s:'✨',n:'Kambrische Explosion (~539 Mio. J.): fast alle Tierstämme erscheinen in wenigen 10 Mio. Jahren fossil'},
+ {t:445,s:'💀',n:'Massenaussterben Ende Ordovizium (~445 Mio. J.)'},
+ {t:372,s:'💀',n:'Massenaussterben im Spätdevon (~372 Mio. J.)'},
+ {t:252,s:'💀',n:'Perm-Trias (~252 Mio. J.): größtes Massenaussterben, grob 80–90 % der Meeresarten'},
+ {t:201,s:'💀',n:'Massenaussterben Trias-Jura (~201 Mio. J.)'},
+ {t:66,s:'☄️',n:'Kreide-Paläogen (66 Mio. J.): Asteroid, Ende der Nicht-Vogel-Dinosaurier'}];
+
+/* ===================== LOGIK ===================== */
+const TMAX=1800, TOP=14, L=18, AXH=66;
+let ROW=26, PW=780, LAB=330, MOB=false, zoom=1;
+let scaleP=0.5, showHydra=true, selected=null, lastW=0;
+let TV=TMAX, VROOT=null; // sichtbares Zeitfenster und Wurzel der Ansicht
+const collapsed=new Set(), all=[];
+let HYDRA=null, HUMAN=null;
+
+function dims(){const vw=window.innerWidth;MOB=vw<700;ROW=MOB?36:26;LAB=MOB?230:330;
+  PW=Math.round((MOB?Math.max(260,vw-120):Math.min(900,Math.max(560,vw-400-LAB-40)))*zoom);}
+function prep(n,p,d){n.id=all.length;all.push(n);n.p=p;n.dep=d;if(n.hy)HYDRA=n;if(n.hu)HUMAN=n;(n.c||[]).forEach(c=>prep(c,n,d+1));}
+prep(ROOT,null,0);
+VROOT=ROOT; const METAZOA=all.find(n=>n.l==='Metazoa');
+function bound(n){let b=0;(n.c||[]).forEach(c=>{const v=c.t??c.f??(c.c?bound(c):0);if(v>b)b=v;});return b;}
+function setT(n){if(!n.c)return;if(n.t!=null){n.T=n.t;n.sch=false;}else{const pT=n.p?n.p.T:TMAX;n.T=pT-(pT-bound(n))*0.3;n.sch=true;}n.c.forEach(setT);}
+setT(ROOT);
+function setE(n){n.E=n.c?Math.min(...n.c.map(setE)):(n.x??0);return n.E;}
+setE(ROOT);
+function leaves(n){return n.c?n.c.flatMap(leaves):[n];}
+function status(n){const Ls=leaves(n),k=Ls.filter(l=>l.x!=null).length;return k===0?'alive':k===Ls.length?'extinct':'mixed';}
+function path(n){const a=[];while(n){a.unshift(n);n=n.p;}return a;}
+function lca(a,b){const A=new Set(path(a));while(b&&!A.has(b))b=b.p;return b;}
+function X(t){return L+PW*(1-Math.pow(Math.min(Math.max(t,0),TV)/TV,scaleP));}
+function inView(n){return path(n).includes(VROOT);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtMa(t){return t>=1000?(t/1000).toFixed(2).replace(/0$/,'').replace('.',',')+' Mrd. J.':Math.round(t)+' Mio. J.';}
+function fmtT(n){return n.sch?'nicht verlässlich datiert (Position schematisch)':'vor ~'+fmtMa(n.T)+(n.u?' (unsicher)':'');}
+function isOpen(n){return n.c&&!collapsed.has(n.id);}
+
+function layout(){
+  const vis=[];(function w(n){if(!isOpen(n)){vis.push(n);return;}n.c.forEach(w);})(VROOT);
+  vis.forEach((n,i)=>n.y=TOP+i*ROW+ROW/2);
+  (function sy(n){if(!isOpen(n))return n.y;const ys=n.c.map(sy);n.y=(ys[0]+ys[ys.length-1])/2;return n.y;})(VROOT);
+  return vis.length;
+}
+
+function treeSVG(){
+  const rows=layout(), H=TOP+rows*ROW+16, W=L+PW+LAB;
+  const sel=new Set(selected?path(selected).map(n=>n.id):[]);
+  const hyp=new Set(showHydra&&HYDRA?path(HYDRA).map(n=>n.id):[]);
+  const base=[],hl=[],wed=[],hits=[],dots=[],txt=[];
+  const cls=n=>sel.has(n.id)?'sel':hyp.has(n.id)?'hy':'';
+  const tr=MOB?17:12; // Trefferradius für Knöpfe
+  function seg(a,b,y,c,dash){const s=`<line class="br${dash?' dash':''}${c?' '+c:''}" x1="${X(a).toFixed(1)}" x2="${X(b).toFixed(1)}" y1="${y}" y2="${y}"/>`;(c?hl:base).push(s);}
+  function tog(n,x,y,sym,tt){dots.push(`<g class="tog" data-id="${n.id}" data-act="tog"><circle class="hit" cx="${x.toFixed(1)}" cy="${y}" r="${tr}"/><circle class="v" cx="${x.toFixed(1)}" cy="${y}" r="${MOB?9:7}"/><text x="${x.toFixed(1)}" y="${y+4.5}">${sym}</text><title>${tt}</title></g>`);}
+  function lab(n,x,y,extra){
+    const st=status(n), c=['lab'];
+    if(st==='extinct')c.push('ext'); if(hyp.has(n.id)&&n===HYDRA)c.push('hy'); if(n===selected)c.push('sel');
+    hits.push(`<rect class="hit" data-id="${n.id}" data-act="sel" x="${(x-4).toFixed(1)}" y="${y-ROW/2}" width="${(L+PW+LAB-x).toFixed(1)}" height="${ROW}"/>`);
+    txt.push(`<text class="${c.join(' ')}" x="${x.toFixed(1)}" y="${y+4.5}" data-id="${n.id}" data-act="sel" tabindex="0">${esc(n.e+' '+n.n)}${st==='extinct'?' †':''}${n.mc?' ★':''}${extra||''}</text>`);
+  }
+  function draw(n){
+    const y=n.y, s=n===VROOT?Math.min(TV,n.p?n.p.T:n.T+70):n.p.T, c=cls(n);
+    if(isOpen(n)){
+      seg(s,n.T,y,c,false);
+      const xs=X(n.T), ys=n.c.map(k=>k.y);
+      base.push(`<line class="br" x1="${xs}" x2="${xs}" y1="${Math.min(...ys)}" y2="${Math.max(...ys)}"/>`);
+      n.c.forEach(k=>{const kc=cls(k);if(kc)hl.push(`<line class="br ${kc}" x1="${xs}" x2="${xs}" y1="${y}" y2="${k.y}"/>`);});
+      tog(n,xs,y,'−','Zuklappen');
+      const ic=['lab','ilab'];if(n===selected)ic.push('sel');
+      const lw=(n.n.length+3)*6.6, isR=n===VROOT, lx=isR?xs+(MOB?14:10):xs-(MOB?14:10);
+      if(isR||!MOB||lw<=lx-X(s)-4||n===selected){ // nur beschriften, wenn der Ast Platz bietet
+        hits.push(`<rect class="hit" data-id="${n.id}" data-act="sel" x="${(isR?lx:lx-lw).toFixed(1)}" y="${y-22}" width="${lw.toFixed(1)}" height="20"/>`);
+        txt.push(`<text class="${ic.join(' ')}" x="${lx.toFixed(1)}" y="${y-7}" text-anchor="${isR?'start':'end'}" data-id="${n.id}" data-act="sel">${esc(n.e+' '+n.n)}${n.mc?' ★':''}</text>`);}
+      n.c.forEach(draw);
+    } else {
+      const E=n.E;
+      if(n.f!=null&&n.f<s){seg(s,n.f,y,c,true);seg(n.f,E,y,c,false);} else seg(s,E,y,c,false);
+      let extra='';
+      if(n.c){
+        const x1=X(n.T),x2=X(E);
+        wed.push(`<path class="wedge" d="M${x1.toFixed(1)},${y} L${x2.toFixed(1)},${y-8} L${x2.toFixed(1)},${y+8} Z"/>`);
+        tog(n,x1,y,'+','Aufklappen');
+        extra=`  (${leaves(n).length})`;
+      }
+      if(E>0)txt.push(`<text class="dag" x="${(X(E)+3).toFixed(1)}" y="${y+4.5}">┤</text>`);
+      lab(n,X(E)+(E>0?14:8),y,extra);
+    }
+  }
+  draw(VROOT);
+  const ev=EVENTS.map(e=>`<line class="ev" x1="${X(e.t)}" x2="${X(e.t)}" y1="0" y2="${H}"/>`).join('');
+  let mark='';
+  if(selected&&HYDRA&&selected!==HYDRA){const a=lca(selected,HYDRA);if(a&&a!==selected&&isOpen(a)&&inView(a))mark=`<circle class="lca" cx="${X(a.T)}" cy="${a.y}" r="6"/>`;}
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Stammbaum">${ev}${hits.join('')}${wed.join('')}${base.join('')}${hl.join('')}${mark}${dots.join('')}${txt.join('')}</svg>`;
+}
+
+function axisSVG(){
+  const W=L+PW+LAB, out=[];
+  ERAS.forEach(([nm,a,b,col],i)=>{
+    const x1=X(Math.min(a,TV)),x2=X(b),w=x2-x1; if(w<=0)return;
+    out.push(`<g class="era"><rect data-era="${i}" x="${x1}" y="4" width="${w}" height="22" style="fill:var(${i%2?'--era2':'--era1'})"/>`);
+    const short=nm.split(' ')[0];
+    if(w>short.length*6.4+6)out.push(`<text x="${x1+w/2}" y="19" text-anchor="middle">${esc(short)}</text>`);
+    out.push('</g>');
+  });
+  const ticks=(TV<TMAX
+    ?(scaleP<1?(PW<420?[800,600,400,200,100,0]:[800,700,600,500,400,300,200,100,50,0]):(PW<420?[800,600,400,200,0]:[800,700,600,500,400,300,200,100,0]))
+    :(scaleP<1?(PW<420?[1800,1000,600,400,200,100,0]:[1800,1500,1200,1000,800,600,500,400,300,200,100,50,0])
+              :(PW<420?[1800,1200,600,0]:[1800,1600,1400,1200,1000,800,600,400,200,0]))).filter(t=>t<=TV);
+  ticks.forEach(t=>{out.push(`<line x1="${X(t)}" x2="${X(t)}" y1="26" y2="31" stroke="var(--line)"/><text class="tick" x="${X(t)}" y="43" text-anchor="middle">${t===0?'heute':t}</text>`);});
+  EVENTS.filter(e=>e.t<=TV).forEach(e=>out.push(`<g data-ev="${EVENTS.indexOf(e)}"><rect class="hit" x="${X(e.t)-14}" y="46" width="28" height="20"/><text class="evsym" x="${X(e.t)}" y="61" text-anchor="middle">${e.s}</text></g>`));
+  out.push(`<text class="tick" x="${L+PW+22}" y="43">Mio. Jahre vor heute</text>`);
+  return `<svg width="${W}" height="${AXH}" viewBox="0 0 ${W} ${AXH}">${out.join('')}</svg>`;
+}
+
+const ST={alive:['heute lebend','b-alive','🟢'],extinct:['ausgestorben','b-extinct','†'],mixed:['teils ausgestorben','b-mixed','◐']};
+function cleanName(s){return s.replace(/[„“"]/g,'').replace(/\(.*?\)/g,'').replace(/s\. ?l\./,'').trim();}
+function headHTML(n){const s=ST[status(n)];
+  return `<div class="emo">${n.e}</div><div><div class="nm">${esc(n.n)}</div><div class="s2"><i>${esc(n.l)}</i> · <span class="${s[1]}">${s[0]}</span>${n.mc?' · <span class="b-mc">★</span>':''}</div></div><div class="chev">⌃</div>`;}
+function panelHTML(n){
+  const st=status(n), [stTxt,stCls]=ST[st], h=[];
+  h.push(`<figure class="media"><div class="frame loading" id="hero"><div class="ph" aria-hidden="true">${n.e}</div></div><figcaption id="credit"></figcaption></figure>`);
+  h.push(`<span class="badge ${stCls}">${stTxt}</span>`);
+  if(n.mc)h.push(`<span class="badge b-mc">★ eigene Erfindung der Mehrzelligkeit</span>`);
+  if(n.c)h.push(`<span class="badge">${leaves(n).length} Endgruppen im Baum</span>`);
+  h.push(`<p class="txt">${esc(n.d||'')}</p>`);
+  if(n.ex)h.push(`<p class="ex">Beispiel: ${esc(n.ex)}</p>`);
+  h.push('<dl class="facts">');
+  if(n.p){const sis=n.p.c.filter(k=>k!==n).map(k=>`<span class="lk" data-id="${k.id}" tabindex="0">${esc(k.n)}</span>`).join(', ');
+    h.push(`<dt>Zweigt ab</dt><dd>${fmtT(n.p)}${sis?'<br>Schwester: '+sis:''}</dd>`);}
+  if(n.c)h.push(`<dt>Teilt sich</dt><dd>${fmtT(n)}</dd>`);
+  if(n.f!=null)h.push(`<dt>Fossilien ab</dt><dd>~${fmtMa(n.f)}${n.u?' (unsicher)':''}</dd>`);
+  if(!n.c&&n.x!=null)h.push(`<dt>Ausgestorben</dt><dd>~${fmtMa(n.x)}${n.u?' (unsicher)':''}</dd>`);
+  if(n.c&&st==='extinct')h.push(`<dt>Letzte</dt><dd>~${fmtMa(n.E)}</dd>`);
+  h.push('</dl>');
+  if(HYDRA){let r;
+    if(n===HYDRA)r='Das ist dein Tier. Der hervorgehobene Pfad zeigt die komplette Ahnenreihe bis zur ersten Eukaryotenzelle.';
+    else{const a=lca(n,HYDRA);
+      r=a===n?'Hydra gehört zu dieser Gruppe.':`Letzter gemeinsamer Vorfahre mit Hydra: <span class="lk" data-id="${a.id}" tabindex="0">${esc(a.e+' '+a.n)}</span>, ${fmtT(a)}. Im Baum als Punkt markiert.`;}
+    h.push(`<div class="rel">${r}</div>`);}
+  if(n.c){h.push('<h3>Untergruppen</h3><ul class="subs">');
+    n.c.forEach(k=>{const s=ST[status(k)];h.push(`<li data-id="${k.id}" tabindex="0"><span class="ti">${k.e}</span><span>${esc(k.n)}${k.mc?' ★':''}</span><span class="st ${s[1]}">${s[2]} ${s[0]}</span></li>`);});
+    h.push('</ul>');}
+  h.push('<h3>Abstammung</h3><div class="crumbs">'+path(n).map(a=>a===n?`<b>${esc(a.n)}</b>`:`<span class="lk" data-id="${a.id}" tabindex="0">${esc(a.n)}</span>`).join(' › ')+'</div>');
+  const q=encodeURIComponent(n.q||cleanName(n.l));
+  h.push(`<div class="links"><a href="https://de.wikipedia.org/w/index.php?search=${encodeURIComponent(cleanName(n.l))}" target="_blank" rel="noopener">Wikipedia</a><a href="https://commons.wikimedia.org/w/index.php?search=${q}&title=Special:MediaSearch&type=image" target="_blank" rel="noopener">Fotos (Commons)</a></div>`);
+  return h.join('');
+}
+const HELP=`<div class="help">
+<p><b>Lesen:</b> Zeit läuft von links (alt) nach rechts (heute). Jede Gabelung ist ein letzter gemeinsamer Vorfahre. Oben/unten bedeutet nichts – Äste drehen sich wie ein Mobile.</p>
+<ul>
+<li>Linie bis zum rechten Rand: Gruppe lebt heute.</li>
+<li>Linie endet mit ┤ und †: ausgestorben.</li>
+<li>Gestrichelter Ast: Linie existierte vermutlich, aber es gibt noch keine Fossilien.</li>
+<li>Grauer Keil mit +: zugeklappte Gruppe, Zahl = Untergruppen.</li>
+<li>★: Hier wurde Mehrzelligkeit unabhängig erfunden.</li>
+<li>Feine gestrichelte Senkrechte über den ganzen Baum: Massenaussterben. Tippe auf 💀/☄️ oder ein Zeitalter für Infos.</li>
+</ul>
+<p><b>Bedienen:</b> „Nur Tiere“ zeigt nur die Tiere ab ~800 Mio. Jahren – viel mehr Platz für die spannende Zeit. Name antippen = Details. + / − antippen = auf- und zuklappen. Details-Leiste nach oben ziehen oder antippen. „Breiter“ streckt die Zeitachse – dann erscheinen auch mehr Namen an den inneren Gabelungen. Unbeschriftete Gabelungen erreichst du über die Abstammungsleiste in den Details.</p>
+<p><b>Ehrlich gesagt:</b> Alle Zeiten sind grobe Schätzungen aus molekularen Uhren und Fossilien, oft ±10–30 %, an der Basis mehr. Wo keine belastbare Zahl existiert, ist die Position schematisch und so markiert. Keine heutige Gruppe ist „höher entwickelt“: Hydra hatte genauso viel Evolutionszeit wie du.</p></div>`;
+
+/* ===================== UI ===================== */
+const $=id=>document.getElementById(id);
+/* Fotos: mehrere Wege, damit es auch in eingeschränkten Mobil-Ansichten klappt.
+   1) Wikipedia-API per fetch (CORS)  2) gleiche Anfrage per JSONP  3) unscharfe Suche (Bild darf "ungefähr" passen) */
+const photoCache={}; let netOK=null, jpN=0;
+const THUMB=Math.min(1280,Math.round(420*Math.max(1,Math.min(3,window.devicePixelRatio||1)))); // scharf auf Retina
+const BAD=/(map|karte|logo|icon|flag|range|distribution|verbreitung|locator|symbol)/i; // keine Karten/Logos als Artbild
+function apiURL(lang,params){
+  const u=new URLSearchParams(Object.assign({action:'query',format:'json',formatversion:'2',prop:'pageimages|info',
+    inprop:'url',piprop:'thumbnail|name',pithumbsize:String(THUMB),redirects:'1'},params));
+  return `https://${lang}.wikipedia.org/w/api.php?${u}`;
+}
+function jsonp(url){return new Promise(res=>{
+  const cb='__wp'+(jpN++), sc=document.createElement('script');
+  const done=v=>{clearTimeout(t);try{delete window[cb];}catch(e){window[cb]=undefined;}sc.remove();res(v);};
+  const t=setTimeout(()=>done(null),7000);
+  window[cb]=d=>done(d); sc.onerror=()=>done(null); sc.src=url+'&callback='+cb; document.head.appendChild(sc);});}
+async function getJSON(url){
+  try{const r=await fetch(url+'&origin=*');if(r.ok){const j=await r.json();netOK=true;return j;}}catch(e){}
+  const j=await jsonp(url); if(j)netOK=true; else if(netOK===null)netOK=false; return j;
+}
+function resolveTitle(j,t){let m=t.replace(/_/g,' ');m=m.charAt(0).toUpperCase()+m.slice(1);
+  ((j.query&&j.query.normalized)||[]).forEach(x=>{if(x.from===m||x.from===t)m=x.to;});
+  ((j.query&&j.query.redirects)||[]).forEach(x=>{if(x.from===m)m=x.to;});return m;}
+function pickPage(j,titles){
+  const pages=j&&j.query&&j.query.pages; if(!pages)return null;
+  const ok=p=>p&&p.thumbnail&&p.thumbnail.source&&!BAD.test(p.pageimage||'');
+  if(titles){for(const t of titles){const m=resolveTitle(j,t);const p=pages.find(q=>q.title===m);if(ok(p))return p;}}
+  const arr=[...pages].sort((a,b)=>(a.index??99)-(b.index??99));return arr.find(ok)||null;
+}
+const asPhoto=(p,lang)=>p?{src:p.thumbnail.source,w:p.thumbnail.width,h:p.thumbnail.height,page:p.fullurl,title:p.title,
+  file:p.pageimage?`https://${lang}.wikipedia.org/wiki/File:${encodeURIComponent(p.pageimage)}`:null}:null;
+const isPlate=src=>/\.(svg|png|gif)(\/|$|\?)/i.test(src); // Zeichnungen, Diagramme, freigestellte Bilder
+async function findPhoto(n){
+  const key=n.id; if(key in photoCache)return photoCache[key];
+  const en=[n.w,cleanName(n.l),n.q].filter(Boolean), de=[cleanName(n.n),cleanName(n.l)];
+  const tries=[
+    [apiURL('en',{titles:en.join('|')}),en,'en'],
+    [apiURL('de',{titles:de.join('|')}),de,'de'],
+    [apiURL('en',{generator:'search',gsrsearch:n.q||cleanName(n.l),gsrlimit:'8',gsrnamespace:'0'}),null,'en'],
+    [apiURL('en',{generator:'search',gsrsearch:cleanName(n.ex||n.n),gsrlimit:'8',gsrnamespace:'0'}),null,'en']
+  ];
+  let res=null;
+  for(const [u,t,lang] of tries){const j=await getJSON(u);if(!j&&netOK===false)break;res=asPhoto(pickPage(j,t),lang);if(res)break;}
+  photoCache[key]=res; return res;
+}
+async function loadPhoto(n){
+  loadSubThumbs(n);
+  const v=await findPhoto(n);
+  if(selected!==n)return;
+  const cr=$('credit'), fr=$('hero');
+  const fail=msg=>{if(selected!==n)return;fr&&fr.classList.remove('loading');if(cr)cr.textContent=msg;};
+  if(!v){fail(netOK===false?'Fotos werden in dieser Ansicht blockiert. Tipp: Datei herunterladen und im Browser öffnen.':'Kein Foto verfügbar.');return;}
+  const img=new Image();img.alt=`${n.n} (${cleanName(n.l)})`;img.referrerPolicy='no-referrer';img.decoding='async';
+  img.onload=()=>{
+    const f=$('hero');if(selected!==n||!f)return;
+    const W=img.naturalWidth,H=img.naturalHeight,r=W/H;
+    // Darstellungsart wählen: Zeichnung → Tafel; passendes Foto → füllen; sonst ganz zeigen vor Unschärfe
+    const mode=isPlate(v.src)?'plate':(r>=1.15&&r<=2.1&&W>=480)?'cover':'contain';
+    f.classList.remove('loading');f.classList.add(mode);
+    if(mode==='contain'){const bg=document.createElement('div');bg.className='bg';bg.style.backgroundImage=`url("${v.src}")`;f.appendChild(bg);}
+    f.appendChild(img);
+    requestAnimationFrame(()=>f.classList.add('loaded'));
+    const lic=v.file||v.page;
+    $('credit').innerHTML=`Bild: Wikipedia, Artikel „${esc(v.title)}“${lic?` · <a href="${lic}" target="_blank" rel="noopener">Urheber &amp; Lizenz</a>`:''}`;};
+  img.onerror=()=>fail('Foto konnte nicht geladen werden.');
+  img.src=v.src;
+}
+/* Mini-Fotos in der Untergruppen-Liste: eine Sammelanfrage */
+async function loadSubThumbs(n){
+  if(!n.c||netOK===false)return;
+  const titles=n.c.map(k=>k.w||cleanName(k.l));
+  const j=await getJSON(apiURL('en',{titles:titles.join('|'),pithumbsize:'160'}));
+  if(!j||selected!==n)return;
+  n.c.forEach((k,i)=>{const p=pickPage(j,[titles[i]]);const el=document.querySelector(`#panel li[data-id="${k.id}"] .ti`);
+    if(!p||!el)return;
+    const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.decoding='async';
+    im.onload=()=>{if(selected!==n)return;el.textContent='';if(isPlate(p.thumbnail.source))el.classList.add('plate');el.appendChild(im);};
+    im.src=p.thumbnail.source;});
+}
+let toastT;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
+
+/* Sheet: peek / open / closed */
+let sheetState='peek';
+const wide=()=>window.matchMedia('(min-width:920px)').matches;
+function setSheet(s){sheetState=s;const el=$('sheet');el.classList.remove('open','closed');if(s!=='peek')el.classList.add(s);}
+function initSheet(){
+  const g=$('grab'),sh=$('sheet');let y0=null,dy=0,base=0;
+  g.addEventListener('pointerdown',e=>{if(wide())return;y0=e.clientY;dy=0;const h=sh.offsetHeight;
+    base=sheetState==='open'?0:sheetState==='closed'?h:h-parseFloat(getComputedStyle(sh).getPropertyValue('--peek'));
+    sh.style.transition='none';g.setPointerCapture(e.pointerId);});
+  g.addEventListener('pointermove',e=>{if(y0==null)return;dy=e.clientY-y0;sh.style.transform=`translateY(${Math.max(0,base+dy)}px)`;});
+  const end=()=>{if(y0==null)return;y0=null;sh.style.transition='';sh.style.transform='';
+    if(Math.abs(dy)<8)setSheet(sheetState==='open'?'peek':'open');
+    else if(dy<-40)setSheet('open');
+    else if(dy>40)setSheet(sheetState==='open'?'peek':'closed');};
+  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSheet(sheetState==='open'?'peek':'open');}});
+}
+
+function render(){$('axiswrap').innerHTML=axisSVG();$('tree').innerHTML=treeSVG();}
+function expandTo(n){path(n).forEach(a=>{if(a!==n)collapsed.delete(a.id);});}
+function scrollToNode(n){
+  const w=$('treewrap'), visH=w.clientHeight-(wide()?0:parseFloat(getComputedStyle($('sheet')).getPropertyValue('--peek')));
+  const rm=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  w.scrollTo({top:Math.max(0,n.y+AXH-visH*0.4),left:Math.max(0,X(n.p?n.p.T:n.T)-(MOB?30:140)),behavior:rm?'auto':'smooth'});
+}
+function setView(animals){VROOT=animals?METAZOA:ROOT;TV=animals?800:TMAX;const b=$('view');if(b)b.classList.toggle('on',animals);}
+function select(n,from){
+  if(!inView(n)){setView(false);toast('Diese Gruppe liegt außerhalb der Tiere – zeige den ganzen Baum.');}
+  selected=n;expandTo(n);render();
+  $('shead').innerHTML=headHTML(n);$('panel').innerHTML=panelHTML(n);$('panel').scrollTop=0;
+  loadPhoto(n);
+  if(from==='panel'){scrollToNode(n);}            // Navigation im Sheet: Sheet bleibt, wie es ist
+  else{if(sheetState==='closed'||from==='tree'||from==='nav')setSheet('peek');if(from!=='tree')scrollToNode(n);}
+}
+function init(){
+  dims();lastW=window.innerWidth;
+  all.forEach(n=>{if(n.c&&n!==ROOT)collapsed.add(n.id);});
+  path(HYDRA).forEach(a=>collapsed.delete(a.id));
+  $('names').innerHTML=all.map(n=>`<option value="${esc(n.n+' ('+n.l+')')}">`).join('');
+  initSheet();
+  $('tree').addEventListener('click',e=>{
+    const el=e.target.closest('[data-id]');if(!el)return;const n=all[+el.dataset.id];
+    if(el.dataset.act==='tog'){if(collapsed.has(n.id))collapsed.delete(n.id);else collapsed.add(n.id);render();}
+    else{if(n.c&&collapsed.has(n.id))collapsed.delete(n.id);select(n,'tree');}
+  });
+  $('tree').addEventListener('keydown',e=>{if(e.key==='Enter'){const el=e.target.closest('[data-id]');if(el)el.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
+  $('axiswrap').addEventListener('click',e=>{
+    const ev=e.target.closest('[data-ev]');if(ev){toast(EVENTS[+ev.dataset.ev].n);return;}
+    const er=e.target.closest('[data-era]');if(er){const [nm,a,b]=ERAS[+er.dataset.era];toast(`${nm}: ${a}–${b} Mio. J.`);}
+  });
+  const pnl=$('panel');
+  const go=e=>{const el=e.target.closest('[data-id]');if(el)select(all[+el.dataset.id],'panel');};
+  pnl.addEventListener('click',go);pnl.addEventListener('keydown',e=>{if(e.key==='Enter')go(e);});
+  const q=$('q');
+  const find=()=>{const v=q.value.trim().toLowerCase();if(!v)return;
+    const n=all.find(a=>(a.n+' ('+a.l+')').toLowerCase()===v)||all.find(a=>a.n.toLowerCase().includes(v)||a.l.toLowerCase().includes(v))
+      ||all.find(a=>(a.ex||'').toLowerCase().includes(v)||(a.d||'').toLowerCase().includes(v));
+    if(n){q.blur();select(n,'nav');}else toast(`Nichts gefunden für „${q.value}“.`);};
+  q.addEventListener('change',find);q.addEventListener('keydown',e=>{if(e.key==='Enter')find();});
+  $('goHydra').onclick=()=>select(HYDRA,'nav');
+  $('goHuman').onclick=()=>select(HUMAN,'nav');
+  $('view').onclick=()=>{const an=VROOT!==METAZOA;setView(an);if(an&&selected&&!inView(selected)){select(HYDRA,'nav');return;}render();if(selected)scrollToNode(selected);};
+  $('openAll').onclick=()=>{collapsed.clear();render();toast('Alles aufgeklappt – viel Spaß beim Scrollen.');};
+  $('closeAll').onclick=()=>{all.forEach(n=>{if(n.c&&n!==ROOT)collapsed.add(n.id);});if(selected)expandTo(selected);render();};
+  $('scale').onclick=e=>{scaleP=scaleP<1?1:0.5;e.target.textContent=scaleP<1?'Zeit: gestaucht':'Zeit: linear';render();};
+  $('wider').onclick=()=>{zoom=Math.min(3,zoom*1.3);dims();render();if(selected)scrollToNode(selected);};
+  $('narrower').onclick=()=>{zoom=Math.max(0.6,zoom/1.3);dims();render();if(selected)scrollToNode(selected);};
+  $('hy').onclick=e=>{showHydra=!showHydra;e.target.classList.toggle('on',showHydra);render();};
+  $('help').onclick=()=>{$('shead').innerHTML='<div><div class="nm">Lesehilfe</div><div class="s2">So funktioniert der Baum</div></div><div class="chev">⌃</div>';
+    $('panel').innerHTML=HELP;setSheet('open');};
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(window.innerWidth!==lastW){lastW=window.innerWidth;dims();render();}},150);});
+  select(HYDRA,'nav');
+}
+if(typeof document!=='undefined')init();
+</script>
 </body>
 </html>

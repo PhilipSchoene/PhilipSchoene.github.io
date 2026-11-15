@@ -8,7 +8,7 @@
 window.SITE = {
   apps: [
     { slug: "microscopy",   title: "Microscopy",   note: "Calculations for the bench", file: "microscopy.html" },
-    { slug: "tree-of-life", title: "Tree of Life", note: "Explore the branches",       file: "tree-of-life.html" }
+    { slug: "tree-of-life", title: "Tree of Life", note: "Multicellular life through time", file: "tree-of-life.html" }
   ],
 
   posts: [
