@@ -113,12 +113,11 @@ ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var
 
 <script>
 const R = String.raw;
-const EPS = 0.1;                       // passion saturates: -eps R^3, -eps J^3
-const P = { a: 0, b: 1, c: -1, d: 0, T: 0.3 };
+const P = { a: 0, b: 1, c: -1, d: 0, e: 0.1, T: 0.3 };   // e: saturation, -e R^3 and -e J^3
 
 const PRESETS = [
   { name: "Star-crossed", a: 0, b: 1, c: -1, d: 0,
-    story: "Strogatz’s original. Juliet is fickle: the more Romeo loves her, the more she backs off; when he cools, she warms. An endless cycle. They are in love at the same time a quarter of the time." },
+    story: "Strogatz’s original. Juliet is fickle: the more Romeo loves her, the more she backs off; when he cools, she warms. An endless cycle (exactly so with ε = 0). They are in love at the same time a quarter of the time." },
   { name: "Fire or ice", a: -0.3, b: 0.8, c: 0.8, d: -0.3,
     story: "Each warms to the other’s warmth and cools at their coldness. Two possible endings: a wedding or a feud. A double well, and every couple rolls into one of them." },
   { name: "Unequal but fair", a: -0.3, b: 1.6, c: 0.4, d: -0.3,
@@ -136,6 +135,7 @@ const SL = [
   { k: "b", label: "b", hint: "Romeo responds to Juliet", min: -2, max: 2 },
   { k: "c", label: "c", hint: "Juliet responds to Romeo", min: -2, max: 2 },
   { k: "d", label: "d", hint: "Juliet’s own echo", min: -2, max: 2 },
+  { k: "e", label: "ε", hint: "saturation (0 = Strogatz)", min: 0, max: 0.5, step: 0.01 },
   { k: "T", label: "noise", hint: "temperature", min: 0, max: 1 }
 ];
 
@@ -165,7 +165,7 @@ document.querySelectorAll(".lead, main > p").forEach(el => el.innerHTML = rich(e
 $("why").innerHTML = [
   R`Variational here means: there is a love potential \(U(R,J)\) and each lover has a positive responsiveness \(\mu\), so that \(\dot R = -\mu_R\,\partial U/\partial R\) and \(\dot J = -\mu_J\,\partial U/\partial J\).`,
   R`Cross-derivatives must match: \(\partial^2 U/\partial R\,\partial J = -b/\mu_R = -c/\mu_J\). With positive \(\mu\) that works exactly when \(b\) and \(c\) have the same sign. Then \(\mu_R = |b|\), \(\mu_J = |c|\) does it. Unequal size is fine, opposite sign is not.`,
-  R`The self terms \(a, d\) and the saturation \(-\varepsilon R^3\) depend on one lover only, so they never spoil the potential. The verdict is decided by \(b\) and \(c\) alone.`,
+  R`The self terms \(a, d\) and the saturation \(-\varepsilon R^3\) depend on one lover only, so they never spoil the potential: \(-\varepsilon R^3\) is just the slope of \(\varepsilon R^4/4\). The verdict is decided by \(b\) and \(c\) alone. The saturation is not in Strogatz’s model; it keeps feelings finite and allows endings other than indifference. Set \(\varepsilon = 0\) for the pure linear version, runaways included.`,
   R`The noise is thermal: each lover jitters with strength \(\mu T\). Then a variational couple reaches true equilibrium, \(P \propto e^{-U/T}\), and every probability current vanishes.`,
   R`The swirl \(\langle R\dot J - J\dot R\rangle\) is the angular momentum of the probability current. In equilibrium it is exactly zero. A circulating, non-zero swirl is the fingerprint of a non-variational couple.`,
   R`Particles: the chaser card of the quiz is the special case \(a = -b\), \(d = -c\), where only the gap \(R - J\) matters. On the dance floor, same-sign \(b, c\) give mixed clusters (both attract) or demixing (both avoid), all in equilibrium. Opposite signs make chasing pairs that run off on their own: active matter from non-reciprocity.`,
@@ -185,9 +185,14 @@ const sliderBox = $("sliders");
 SL.forEach(s => {
   const l = document.createElement("label");
   l.innerHTML = `<div class="row"><b>${s.label} <output id="o_${s.k}"></output></b><span>${s.hint}</span></div>
-    <input type="range" id="s_${s.k}" min="${s.min}" max="${s.max}" step="0.1">`;
+    <input type="range" id="s_${s.k}" min="${s.min}" max="${s.max}" step="${s.step || 0.1}">`;
   sliderBox.append(l);
-  l.querySelector("input").oninput = e => { P[s.k] = +e.target.value; markPreset(-1); changed(s.k !== "T"); };
+  l.querySelector("input").oninput = e => {
+    P[s.k] = +e.target.value;
+    if (s.k === "e") seedPlane();          // runaways from ε = 0 would be stiff; start fresh
+    else if (s.k !== "T") markPreset(-1);
+    changed(s.k !== "T");
+  };
 });
 const ctl = document.createElement("div");
 ctl.className = "ctl";
@@ -216,7 +221,7 @@ function potentialTeX() {
   const s = k === "yes" ? Math.sign(P.b) : 0;
   const terms = [
     [-P.a / (2 * mR), "R^2"], [-P.d / (2 * mJ), "J^2"], [-s, "RJ"],
-    [EPS / (4 * mR), "R^4"], [EPS / (4 * mJ), "J^4"]
+    [P.e / (4 * mR), "R^4"], [P.e / (4 * mJ), "J^4"]
   ].filter(t => Math.abs(t[0]) > 1e-9);
   let out = "";
   terms.forEach(([c, m], i) => {
@@ -252,7 +257,7 @@ function verdict() {
   const extra = e.complex ? R` Complex eigenvalues at the origin: relaxation spirals, which no gradient flow can do.` : "";
   $("verdict").innerHTML = `<div class="v">${v}</div><p>${rich(body)}${k === "yes" || k === "apart" ? "" : rich(extra)}</p>` +
     (k === "yes" || k === "apart" ? `<div class="u">${tex(potentialTeX(), true)}</div>` : "") +
-    `<div class="swirl"><span>Swirl</span><div class="meter"><i id="needle" style="left:50%"></i></div><b id="swirl">0</b></div>`;
+    `<div class="swirl"><span>Swirl</span><div class="meter"><i id="needle" style="left:50%"></i></div><b id="swirl">0</b></div><p class="small muted" id="nosteady" style="margin:10px 0 0"></p>`;
 }
 
 function changed(params) {
@@ -271,8 +276,8 @@ function seedPlane() {
   for (let i = 0; i < N; i++) { X[i] = (Math.random() * 2 - 1) * 2.5; Y[i] = (Math.random() * 2 - 1) * 2.5; }
   X[0] = 2; Y[0] = 0.5; trail = []; swirlEMA = 0;
 }
-function fR(r, j) { return P.a * r + P.b * j - EPS * r * r * r; }
-function fJ(r, j) { return P.c * r + P.d * j - EPS * j * j * j; }
+function fR(r, j) { return P.a * r + P.b * j - P.e * r * r * r; }
+function fJ(r, j) { return P.c * r + P.d * j - P.e * j * j * j; }
 
 function stepPlane(dt) {
   const sR = Math.sqrt(2 * mobR() * P.T * dt), sJ = Math.sqrt(2 * mobJ() * P.T * dt);
@@ -291,6 +296,16 @@ function measureSwirl() {
   s /= N;
   swirlEMA += (s - swirlEMA) * 0.03;
   const el = $("swirl"), nd = $("needle");
+  const e = eigen(), maxRe = e.tr / 2 + (e.disc > 0 ? Math.sqrt(e.disc) / 2 : 0);
+  if (el && P.e === 0 && maxRe > -1e-9) {
+    el.textContent = "—";
+    nd.style.left = "50%";
+    $("nosteady").textContent = maxRe > 1e-9
+      ? "No saturation and an unstable direction: love (or hate) grows exponentially. No steady state, so no swirl to measure."
+      : (P.T > 0 ? "Marginal: without saturation the noise pumps feelings up forever. No steady state, so no swirl to measure." : "Marginal: pure cycles that never decay. Add noise and they drift off for good.");
+    return;
+  }
+  if ($("nosteady")) $("nosteady").textContent = "";
   if (el) {
     el.textContent = (swirlEMA >= 0 ? "+" : "") + swirlEMA.toFixed(2);
     nd.style.left = (50 + 50 * Math.tanh(swirlEMA / 2)) + "%";
