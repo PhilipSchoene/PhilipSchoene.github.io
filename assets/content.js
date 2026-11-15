@@ -13,7 +13,8 @@ window.SITE = {
     { slug: "tree-of-life", title: "Tree of Life", note: "Multicellular life through time", file: "use-cases/tree-of-life.html", section: "Use cases" },
     { slug: "microscopy",   title: "Microscopy",   note: "Calculations for the bench",     file: "use-cases/microscopy.html",   section: "Use cases" },
 
-    { slug: "variational",  title: "Variational?", note: "Active matter, case by case",    file: "study/active-matter/variational.html", section: "Study", module: "Active Matter" }
+    { slug: "variational",  title: "Variational?", note: "Active matter, case by case",    file: "study/active-matter/variational.html", section: "Study", module: "Active Matter" },
+    { slug: "romeo-juliet", title: "Romeo & Juliet", note: "Wherefore art thou, potential?", file: "study/active-matter/romeo-juliet.html", section: "Study", module: "Active Matter" }
   ],
 
   posts: [

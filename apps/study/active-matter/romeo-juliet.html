@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Romeo &amp; Juliet</title>
+<link rel="stylesheet" href="../../../assets/katex/katex.min.css">
+<script src="../../../assets/katex/katex.min.js"></script>
+<style>
+:root{
+  --bg:#fff; --ink:#1d1d1f; --muted:#86868b; --line:#e8e8ed; --soft:#f5f5f7; --faint:#d2d2d7;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#000; --ink:#f5f5f7; --muted:#86868b; --line:#2c2c2e; --soft:#1c1c1e; --faint:#3a3a3c; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 var(--font);letter-spacing:-.011em;-webkit-font-smoothing:antialiased}
+main{max-width:720px;margin:0 auto;padding:40px 20px 96px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:1px solid var(--ink);outline-offset:3px}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;letter-spacing:.02em;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:48px}
+h1{font:600 clamp(30px,5.5vw,44px)/1.08 var(--display);letter-spacing:-.03em;margin-bottom:16px}
+h2{font:600 13px/1.3 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:64px 0 14px}
+p{margin-bottom:1em}
+.lead{font-size:19px;line-height:1.5}
+.prologue{color:var(--muted);font-style:italic;margin-bottom:20px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.eq{margin:24px 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow-x:auto;text-align:center}
+.eq .katex-display{margin:0}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 8px}
+.chips button{border:1px solid var(--line);border-radius:980px;padding:7px 14px;font-size:14px;transition:background .2s,color .2s,border-color .2s}
+.chips button:hover{border-color:var(--ink)}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.story{min-height:3.2em;font-size:15px;color:var(--muted);margin:10px 0 24px}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:28px;align-items:start}
+@media (max-width:640px){.stage{grid-template-columns:1fr}}
+canvas{display:block;width:100%;border-radius:14px;background:var(--soft);touch-action:none}
+#plane{aspect-ratio:1/1}
+#crowd{aspect-ratio:16/10}
+.caption{font-size:13px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between;gap:12px}
+
+.sliders label{display:block;margin-bottom:14px;font-size:14px}
+.sliders .row{display:flex;justify-content:space-between;align-items:baseline}
+.sliders .row b{font-weight:600;font-variant-numeric:tabular-nums}
+.sliders .row span{color:var(--muted);font-size:12px}
+input[type=range]{width:100%;margin-top:4px;-webkit-appearance:none;appearance:none;background:transparent;height:22px}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line);border-radius:2px}
+input[type=range]::-moz-range-track{height:2px;background:var(--line);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--faint);box-shadow:0 1px 3px rgba(0,0,0,.15);margin-top:-8px}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--faint)}
+.ctl{display:flex;gap:8px;margin-top:6px}
+.ctl button{border:1px solid var(--line);border-radius:980px;padding:6px 14px;font-size:13px}
+.ctl button:hover{border-color:var(--ink)}
+
+.verdict{margin-top:28px;padding:20px 22px;background:var(--soft);border-radius:14px}
+.verdict .v{font:600 22px/1.25 var(--display);letter-spacing:-.02em;margin-bottom:6px}
+.verdict p{font-size:15px;margin:0 0 8px}
+.verdict .u{overflow-x:auto;padding:4px 0}
+.swirl{display:flex;align-items:center;gap:14px;margin-top:14px;font-size:14px}
+.meter{flex:1;height:2px;background:var(--line);position:relative;border-radius:2px}
+.meter i{position:absolute;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--ink);transform:translateX(-50%);transition:left .15s linear}
+.meter::after{content:"";position:absolute;left:50%;top:-6px;width:1px;height:14px;background:var(--muted)}
+.swirl b{font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right;font-weight:600}
+ol.why{list-style:none;counter-reset:w}
+ol.why li{counter-increment:w;position:relative;padding:14px 0 14px 32px;border-top:1px solid var(--line)}
+ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var(--muted);font-size:13px}
+.legend{display:flex;gap:18px;font-size:13px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}
+.legend .r::before{background:var(--ink)}
+.legend .j::before{border:1.5px solid var(--ink);box-sizing:border-box}
+</style>
+</head>
+<body>
+<main>
+  <div class="meta"><span>Active Matter</span><span>Romeo &amp; Juliet</span></div>
+
+  <h1>Wherefore art thou, potential?</h1>
+  <p class="prologue">Two households, both alike in dignity: one has a potential, the other has not.</p>
+  <p class="lead">Romeo’s love \(R\) and Juliet’s love \(J\) push each other around. Some couples roll downhill on a love potential and settle. Others circulate forever. Same maths as the attracting and repelling particles.</p>
+
+  <div class="eq" id="eq"></div>
+
+  <h2>Couples</h2>
+  <div class="chips" id="presets"></div>
+  <p class="story" id="story"></p>
+
+  <div class="stage">
+    <div>
+      <canvas id="plane" aria-label="Love plane: Romeo's love horizontally, Juliet's vertically"></canvas>
+      <div class="caption"><span>400 couples, each with its own noise. One is traced.</span></div>
+    </div>
+    <div class="sliders" id="sliders"></div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <h2>The same game, as particles</h2>
+  <p>A crowd of Romeos and Juliets on a dance floor. Each Romeo is pulled towards nearby Juliets with strength \(b\) (pushed away if negative), each Juliet towards nearby Romeos with \(c\). Everyone keeps a little personal space and jiggles with the same noise.</p>
+  <canvas id="crowd" aria-label="Crowd of Romeos and Juliets"></canvas>
+  <div class="caption"><span class="legend"><span class="r">Romeo</span><span class="j">Juliet</span></span><span class="ctl"><button id="shuffle">Shuffle</button></span></div>
+  <p class="story" id="crowdstory" style="margin-top:14px"></p>
+
+  <h2>Why</h2>
+  <ol class="why" id="why"></ol>
+</main>
+
+<script>
+const R = String.raw;
+const EPS = 0.1;                       // passion saturates: -eps R^3, -eps J^3
+const P = { a: 0, b: 1, c: -1, d: 0, T: 0.3 };
+
+const PRESETS = [
+  { name: "Star-crossed", a: 0, b: 1, c: -1, d: 0,
+    story: "Strogatz’s original. Juliet is fickle: the more Romeo loves her, the more she backs off; when he cools, she warms. An endless cycle. They are in love at the same time a quarter of the time." },
+  { name: "Fire or ice", a: -0.3, b: 0.8, c: 0.8, d: -0.3,
+    story: "Each warms to the other’s warmth and cools at their coldness. Two possible endings: a wedding or a feud. A double well, and every couple rolls into one of them." },
+  { name: "Unequal but fair", a: -0.3, b: 1.6, c: 0.4, d: -0.3,
+    story: "Romeo reacts four times as strongly as Juliet. Looks lopsided, but it is still a potential: only the mobilities differ." },
+  { name: "Chaser and evader", a: -1, b: 1, c: -1, d: 1,
+    story: "From the quiz. Romeo is drawn to Juliet, Juliet runs from Romeo, and each reacts only to the gap between them. The gap freezes and the whole affair drifts off." },
+  { name: "On and off", a: -0.2, b: 1, c: -1, d: -0.2,
+    story: "Star-crossed, but both cool off on their own. Without noise they would spiral into indifference. With noise the merry-go-round keeps turning." },
+  { name: "Ghosted", a: -0.5, b: 1, c: 0, d: -0.5,
+    story: "Romeo responds to Juliet. Juliet does not notice Romeo at all. Action without reaction." }
+];
+
+const SL = [
+  { k: "a", label: "a", hint: "Romeo’s own echo", min: -2, max: 2 },
+  { k: "b", label: "b", hint: "Romeo responds to Juliet", min: -2, max: 2 },
+  { k: "c", label: "c", hint: "Juliet responds to Romeo", min: -2, max: 2 },
+  { k: "d", label: "d", hint: "Juliet’s own echo", min: -2, max: 2 },
+  { k: "T", label: "noise", hint: "temperature", min: 0, max: 1 }
+];
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const tex = (s, d) => window.katex ? katex.renderToString(s, { displayMode: !!d, throwOnError: false }) : s;
+const rich = s => s.replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => tex(t, false));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = x => { const s = (Math.round(x * 100) / 100).toFixed(2).replace(/\.?0+$/, ""); return s === "-0" ? "0" : s; };
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+// Each lover's own responsiveness (mobility). Noise follows it (fluctuation-dissipation).
+const mobR = () => P.b !== 0 ? Math.abs(P.b) : 1;
+const mobJ = () => P.c !== 0 ? Math.abs(P.c) : 1;
+
+function kind() {
+  if (P.b === 0 && P.c === 0) return "apart";
+  if (P.b * P.c > 0) return "yes";
+  if (P.b * P.c < 0) return "no";
+  return "oneway";
+}
+
+// ---------- static text ----------
+$("eq").innerHTML = tex(R`\begin{aligned}\dot R &= a\,R + b\,J - \varepsilon R^3 + \sqrt{2\mu_R T}\,\xi_R\\ \dot J &= c\,R + d\,J - \varepsilon J^3 + \sqrt{2\mu_J T}\,\xi_J\end{aligned}`, true);
+document.querySelectorAll(".lead, main > p").forEach(el => el.innerHTML = rich(el.innerHTML));
+
+$("why").innerHTML = [
+  R`Variational here means: there is a love potential \(U(R,J)\) and each lover has a positive responsiveness \(\mu\), so that \(\dot R = -\mu_R\,\partial U/\partial R\) and \(\dot J = -\mu_J\,\partial U/\partial J\).`,
+  R`Cross-derivatives must match: \(\partial^2 U/\partial R\,\partial J = -b/\mu_R = -c/\mu_J\). With positive \(\mu\) that works exactly when \(b\) and \(c\) have the same sign. Then \(\mu_R = |b|\), \(\mu_J = |c|\) does it. Unequal size is fine, opposite sign is not.`,
+  R`The self terms \(a, d\) and the saturation \(-\varepsilon R^3\) depend on one lover only, so they never spoil the potential. The verdict is decided by \(b\) and \(c\) alone.`,
+  R`The noise is thermal: each lover jitters with strength \(\mu T\). Then a variational couple reaches true equilibrium, \(P \propto e^{-U/T}\), and every probability current vanishes.`,
+  R`The swirl \(\langle R\dot J - J\dot R\rangle\) is the angular momentum of the probability current. In equilibrium it is exactly zero. A circulating, non-zero swirl is the fingerprint of a non-variational couple.`,
+  R`Particles: the chaser card of the quiz is the special case \(a = -b\), \(d = -c\), where only the gap \(R - J\) matters. On the dance floor, same-sign \(b, c\) give mixed clusters (both attract) or demixing (both avoid), all in equilibrium. Opposite signs make chasing pairs that run off on their own: active matter from non-reciprocity.`,
+  R`Purist’s footnote: if Romeo’s feelings could move Juliet’s directly (an off-diagonal mobility), any linear couple with real eigenvalues could be written as downhill. Here each lover has their own responsiveness, and so does the noise.`
+].map(s => `<li>${rich(s)}</li>`).join("");
+
+// ---------- controls ----------
+const chipBox = $("presets");
+PRESETS.forEach((p, i) => {
+  const b = document.createElement("button");
+  b.textContent = p.name;
+  b.onclick = () => applyPreset(i);
+  chipBox.append(b);
+});
+
+const sliderBox = $("sliders");
+SL.forEach(s => {
+  const l = document.createElement("label");
+  l.innerHTML = `<div class="row"><b>${s.label} <output id="o_${s.k}"></output></b><span>${s.hint}</span></div>
+    <input type="range" id="s_${s.k}" min="${s.min}" max="${s.max}" step="0.1">`;
+  sliderBox.append(l);
+  l.querySelector("input").oninput = e => { P[s.k] = +e.target.value; markPreset(-1); changed(s.k !== "T"); };
+});
+const ctl = document.createElement("div");
+ctl.className = "ctl";
+ctl.innerHTML = `<button id="pause">Pause</button><button id="restart">Restart</button>`;
+sliderBox.append(ctl);
+
+let running = true;
+$("pause").onclick = () => { running = !running; $("pause").textContent = running ? "Pause" : "Play"; };
+$("restart").onclick = () => { seedPlane(); seedCrowd(); };
+$("shuffle").onclick = seedCrowd;
+
+function markPreset(i) { [...chipBox.children].forEach((b, j) => b.classList.toggle("on", j === i)); if (i < 0) $("story").textContent = "Your own couple."; }
+function applyPreset(i) {
+  Object.assign(P, { a: PRESETS[i].a, b: PRESETS[i].b, c: PRESETS[i].c, d: PRESETS[i].d });
+  markPreset(i);
+  $("story").textContent = PRESETS[i].story;
+  changed(true);
+  seedPlane();
+}
+function syncSliders() { SL.forEach(s => { $("s_" + s.k).value = P[s.k]; $("o_" + s.k).textContent = fmt(P[s.k]); }); }
+
+// ---------- verdict ----------
+function potentialTeX() {
+  const k = kind();
+  const mR = mobR(), mJ = mobJ();
+  const s = k === "yes" ? Math.sign(P.b) : 0;
+  const terms = [
+    [-P.a / (2 * mR), "R^2"], [-P.d / (2 * mJ), "J^2"], [-s, "RJ"],
+    [EPS / (4 * mR), "R^4"], [EPS / (4 * mJ), "J^4"]
+  ].filter(t => Math.abs(t[0]) > 1e-9);
+  let out = "";
+  terms.forEach(([c, m], i) => {
+    const sign = c < 0 ? "-" : (i ? "+" : "");
+    const mag = Math.abs(c);
+    const num = Math.abs(mag - 1) < 1e-9 ? "" : fmt(mag);
+    out += ` ${sign} ${num}\\,${m}`;
+  });
+  return "U = " + (out || "0");
+}
+
+function eigen() {
+  const tr = P.a + P.d, disc = (P.a - P.d) ** 2 + 4 * P.b * P.c;
+  return { complex: disc < -1e-9, tr, disc };
+}
+
+function verdict() {
+  const k = kind(), e = eigen();
+  let v, body;
+  if (k === "yes") {
+    v = "Variational.";
+    body = R`\(b\) and \(c\) share a sign. With responsiveness \(\mu_R = ${fmt(mobR())}\), \(\mu_J = ${fmt(mobJ())}\) both lovers move straight downhill on`;
+  } else if (k === "apart") {
+    v = "Variational.";
+    body = R`They ignore each other: two separate wells, one each.`;
+  } else if (k === "no") {
+    v = "Not variational.";
+    body = R`\(b\) and \(c\) have opposite signs: one is drawn in, the other pushed away. A potential would need a negative responsiveness. The probability swirls and never settles.`;
+  } else {
+    v = "Not variational.";
+    body = (P.b === 0 ? "Juliet" : "Romeo") + " responds, " + (P.b === 0 ? "Romeo" : "Juliet") + " does not. A one-way coupling has no potential.";
+  }
+  const extra = e.complex ? R` Complex eigenvalues at the origin: relaxation spirals, which no gradient flow can do.` : "";
+  $("verdict").innerHTML = `<div class="v">${v}</div><p>${rich(body)}${k === "yes" || k === "apart" ? "" : rich(extra)}</p>` +
+    (k === "yes" || k === "apart" ? `<div class="u">${tex(potentialTeX(), true)}</div>` : "") +
+    `<div class="swirl"><span>Swirl</span><div class="meter"><i id="needle" style="left:50%"></i></div><b id="swirl">0</b></div>`;
+}
+
+function changed(params) {
+  syncSliders();
+  if (params) verdict();
+  swirlEMA = 0;
+  crowdText();
+}
+
+// ---------- love plane ----------
+const plane = $("plane"), pctx = plane.getContext("2d");
+const N = 400, L = 4;                    // couples, view range ±L
+let X = new Float64Array(N), Y = new Float64Array(N), trail = [], swirlEMA = 0;
+
+function seedPlane() {
+  for (let i = 0; i < N; i++) { X[i] = (Math.random() * 2 - 1) * 2.5; Y[i] = (Math.random() * 2 - 1) * 2.5; }
+  X[0] = 2; Y[0] = 0.5; trail = []; swirlEMA = 0;
+}
+function fR(r, j) { return P.a * r + P.b * j - EPS * r * r * r; }
+function fJ(r, j) { return P.c * r + P.d * j - EPS * j * j * j; }
+
+function stepPlane(dt) {
+  const sR = Math.sqrt(2 * mobR() * P.T * dt), sJ = Math.sqrt(2 * mobJ() * P.T * dt);
+  for (let i = 0; i < N; i++) {
+    const r = X[i], j = Y[i];
+    X[i] = r + fR(r, j) * dt + sR * gauss();
+    Y[i] = j + fJ(r, j) * dt + sJ * gauss();
+    if (!isFinite(X[i]) || Math.abs(X[i]) > 50) X[i] = Math.sign(X[i]) * 50 || 0;
+    if (!isFinite(Y[i]) || Math.abs(Y[i]) > 50) Y[i] = Math.sign(Y[i]) * 50 || 0;
+  }
+}
+function measureSwirl() {
+  // <R f_J - J f_R>: the noise averages out, so the drift gives a quiet estimate.
+  let s = 0;
+  for (let i = 0; i < N; i++) s += X[i] * fJ(X[i], Y[i]) - Y[i] * fR(X[i], Y[i]);
+  s /= N;
+  swirlEMA += (s - swirlEMA) * 0.03;
+  const el = $("swirl"), nd = $("needle");
+  if (el) {
+    el.textContent = (swirlEMA >= 0 ? "+" : "") + swirlEMA.toFixed(2);
+    nd.style.left = (50 + 50 * Math.tanh(swirlEMA / 2)) + "%";
+  }
+}
+
+function sizeCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  return { w, h, dpr };
+}
+
+function drawPlane() {
+  const { w, h, dpr } = sizeCanvas(plane), c = pctx;
+  const ink = css("--ink"), muted = css("--muted"), faint = css("--faint");
+  const sx = x => (x + L) / (2 * L) * w, sy = y => (1 - (y + L) / (2 * L)) * h;
+  c.clearRect(0, 0, w, h);
+  // axes
+  c.strokeStyle = faint; c.lineWidth = dpr;
+  c.beginPath(); c.moveTo(sx(-L), sy(0)); c.lineTo(sx(L), sy(0)); c.moveTo(sx(0), sy(-L)); c.lineTo(sx(0), sy(L)); c.stroke();
+  // flow field
+  c.strokeStyle = faint; c.lineWidth = 1.2 * dpr;
+  const G = 13, cell = 2 * L / G;
+  for (let gx = 0; gx < G; gx++) for (let gy = 0; gy < G; gy++) {
+    const x = -L + (gx + .5) * cell, y = -L + (gy + .5) * cell;
+    let u = fR(x, y), v = fJ(x, y); const m = Math.hypot(u, v); if (m < 1e-6) continue;
+    const len = cell * 0.38 * Math.min(1, 0.35 + m / 3); u /= m; v /= m;
+    const x0 = x - u * len / 2, y0 = y - v * len / 2, x1 = x + u * len / 2, y1 = y + v * len / 2;
+    c.beginPath(); c.moveTo(sx(x0), sy(y0)); c.lineTo(sx(x1), sy(y1));
+    const ah = 4 * dpr, ang = Math.atan2(sy(y1) - sy(y0), sx(x1) - sx(x0));
+    c.lineTo(sx(x1) - ah * Math.cos(ang - .5), sy(y1) - ah * Math.sin(ang - .5));
+    c.moveTo(sx(x1), sy(y1));
+    c.lineTo(sx(x1) - ah * Math.cos(ang + .5), sy(y1) - ah * Math.sin(ang + .5));
+    c.stroke();
+  }
+  // labels
+  c.fillStyle = muted; c.font = `${11 * dpr}px ${css("--font")}`;
+  c.textAlign = "right"; c.fillText("mutual love", w - 10 * dpr, 18 * dpr);
+  c.textAlign = "left";  c.fillText("feud", 10 * dpr, h - 10 * dpr);
+  c.fillText("she loves, he hates", 10 * dpr, 18 * dpr);
+  c.textAlign = "right"; c.fillText("he loves, she hates", w - 10 * dpr, h - 10 * dpr);
+  c.textAlign = "right"; c.fillText("R →", w - 10 * dpr, sy(0) - 6 * dpr);
+  c.textAlign = "left";  c.fillText("J ↑", sx(0) + 6 * dpr, 34 * dpr);
+  // ensemble
+  c.fillStyle = ink; c.globalAlpha = 0.35;
+  const rr = 1.6 * dpr;
+  for (let i = 1; i < N; i++) { c.beginPath(); c.arc(sx(X[i]), sy(Y[i]), rr, 0, 7); c.fill(); }
+  c.globalAlpha = 1;
+  // traced couple
+  trail.push([X[0], Y[0]]); if (trail.length > 260) trail.shift();
+  c.strokeStyle = ink; c.lineWidth = 1.4 * dpr;
+  for (let k = 1; k < trail.length; k++) {
+    c.globalAlpha = k / trail.length * 0.8;
+    c.beginPath(); c.moveTo(sx(trail[k - 1][0]), sy(trail[k - 1][1])); c.lineTo(sx(trail[k][0]), sy(trail[k][1])); c.stroke();
+  }
+  c.globalAlpha = 1;
+  c.beginPath(); c.arc(sx(X[0]), sy(Y[0]), 4.5 * dpr, 0, 7); c.fill();
+}
+
+// ---------- crowd ----------
+const crowd = $("crowd"), cctx = crowd.getContext("2d");
+const NC = 110, LX = 24, LY = 15, RC = 2.4, SIG = 0.75, KREP = 24;
+const KX = 3, TC = 0.4;                   // crowd: stronger pull, gentler noise (same for everyone)
+let cx = new Float64Array(2 * NC), cy = new Float64Array(2 * NC);   // 0..NC-1 Romeo, NC.. Juliet
+
+const H = 16;                                                       // trail length in frames
+let hist = [];
+function seedCrowd() { for (let i = 0; i < 2 * NC; i++) { cx[i] = Math.random() * LX; cy[i] = Math.random() * LY; } hist = []; }
+function recordCrowd() { hist.push([cx.slice(), cy.slice()]); if (hist.length > H) hist.shift(); }
+
+function stepCrowd(dt) {
+  const n = 2 * NC, vx = new Float64Array(n), vy = new Float64Array(n);
+  const mR = mobR(), mJ = mobJ();
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    let dx = cx[j] - cx[i], dy = cy[j] - cy[i];
+    dx -= LX * Math.round(dx / LX); dy -= LY * Math.round(dy / LY);
+    const r2 = dx * dx + dy * dy; if (r2 > RC * RC || r2 < 1e-12) continue;
+    const r = Math.sqrt(r2), ux = dx / r, uy = dy / r;       // unit vector i -> j
+    const mi = i < NC ? mR : mJ, mj = j < NC ? mR : mJ;
+    if (r < SIG) {                                          // personal space, reciprocal
+      const f = KREP * (1 - r / SIG);
+      vx[i] -= mi * f * ux; vy[i] -= mi * f * uy; vx[j] += mj * f * ux; vy[j] += mj * f * uy;
+    }
+    if ((i < NC) !== (j < NC)) {                            // Romeo-Juliet pair
+      const g = KX * (1 - r / RC);
+      const ki = i < NC ? P.b : P.c, kj = j < NC ? P.b : P.c; // pull towards the other
+      vx[i] += ki * g * ux; vy[i] += ki * g * uy;
+      vx[j] -= kj * g * ux; vy[j] -= kj * g * uy;
+    }
+  }
+  const sR = Math.sqrt(2 * mR * TC * P.T * dt), sJ = Math.sqrt(2 * mJ * TC * P.T * dt);
+  for (let i = 0; i < n; i++) {
+    const s = i < NC ? sR : sJ;
+    cx[i] = ((cx[i] + vx[i] * dt + s * gauss()) % LX + LX) % LX;
+    cy[i] = ((cy[i] + vy[i] * dt + s * gauss()) % LY + LY) % LY;
+  }
+}
+
+function drawCrowd() {
+  const { w, h, dpr } = sizeCanvas(crowd), c = cctx, ink = css("--ink");
+  const k = w / LX, k0 = k, rad = 0.26 * k;
+  c.clearRect(0, 0, w, h);
+  // short trails: persistent motion shows up as streaks
+  c.strokeStyle = ink; c.lineWidth = 1.2 * dpr; c.lineCap = "round";
+  for (let k = 1; k < hist.length; k++) {
+    c.globalAlpha = 0.25 * k / hist.length;
+    c.beginPath();
+    const [ax, ay] = hist[k - 1], [bx, by] = hist[k];
+    for (let i = 0; i < 2 * NC; i++) {
+      if (Math.abs(bx[i] - ax[i]) > LX / 2 || Math.abs(by[i] - ay[i]) > LY / 2) continue;
+      c.moveTo(ax[i] * k0, ay[i] * (h / LY)); c.lineTo(bx[i] * k0, by[i] * (h / LY));
+    }
+    c.stroke();
+  }
+  c.globalAlpha = 1;
+  c.fillStyle = ink; c.strokeStyle = ink; c.lineWidth = 1.5 * dpr;
+  for (let i = 0; i < 2 * NC; i++) {
+    c.beginPath(); c.arc(cx[i] * k, cy[i] * (h / LY), rad, 0, 7);
+    if (i < NC) c.fill(); else c.stroke();
+  }
+}
+
+function crowdText() {
+  const k = kind();
+  let t;
+  if (k === "apart") t = "Strangers: two ideal gases that pass through each other’s lives. Equilibrium.";
+  else if (k === "yes" && P.b > 0) t = "Both attract: mixed Romeo–Juliet clusters form and sit still, only jiggling. Equilibrium, whatever the ratio of b to c.";
+  else if (k === "yes") t = "Both avoid: Romeos and Juliets demix into separate patches. Still equilibrium.";
+  else if (k === "no") t = (P.b > 0 ? "Romeos chase, Juliets flee." : "Juliets chase, Romeos flee.") + " Pairs and clusters run off together in a persistent direction. Nothing pushes them from outside: self-propulsion out of non-reciprocity. Active matter.";
+  else t = (P.b !== 0 ? "Romeos react to Juliets, Juliets ignore them." : "Juliets react to Romeos, Romeos ignore them.") + " Looks calm, but action has no reaction, and no free energy describes it.";
+  $("crowdstory").textContent = t;
+}
+
+// ---------- loop ----------
+let t = 0;
+function frame() {
+  if (running) {
+    for (let s = 0; s < 4; s++) stepPlane(0.01);
+    for (let s = 0; s < 3; s++) stepCrowd(0.02);
+    recordCrowd();
+    t += 0.04;
+    measureSwirl();
+  }
+  drawPlane();
+  drawCrowd();
+  requestAnimationFrame(frame);
+}
+
+seedPlane(); seedCrowd();
+applyPreset(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
