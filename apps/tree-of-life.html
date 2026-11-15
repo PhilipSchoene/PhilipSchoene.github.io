@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Baum des mehrzelligen Lebens</title>
 <meta name="description" content="Interaktiver Stammbaum des mehrzelligen Lebens: Aufspaltungszeiten, ausgestorbene und lebende Gruppen, mit Hydra als Bezugspunkt.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%231d1d1f'/></svg>">
 <style>
 :root{
   --bg:#ffffff;--ink:#1d1d1f;--muted:#86868b;--line:#aeaeb2;--panel:#ffffff;--border:#e8e8ed;
@@ -61,7 +61,8 @@ svg text{font-size:13px;fill:var(--ink)}
 .era text{font-size:10.5px;fill:var(--muted);pointer-events:none}
 .era rect{cursor:pointer}
 .tick{font-size:11px!important;fill:var(--muted)!important}
-.evsym{font-size:14px!important;cursor:pointer}
+.evdot{fill:var(--muted);pointer-events:none}
+[data-ev]{cursor:pointer}
 @media (hover:hover){.lab:hover{text-decoration:underline}.tog:hover circle.v{stroke:var(--accent)}}
 
 /* Bottom-Sheet */
@@ -641,7 +642,7 @@ function treeSVG(){
     const st=status(n), c=['lab'];
     if(st==='extinct')c.push('ext'); if(hyp.has(n.id)&&n===HYDRA)c.push('hy'); if(n===selected)c.push('sel');
     hits.push(`<rect class="hit" data-id="${n.id}" data-act="sel" x="${(x-4).toFixed(1)}" y="${y-ROW/2}" width="${(L+PW+LAB-x).toFixed(1)}" height="${ROW}"/>`);
-    txt.push(`<text class="${c.join(' ')}" x="${x.toFixed(1)}" y="${y+4.5}" data-id="${n.id}" data-act="sel" tabindex="0">${esc(n.e+' '+n.n)}${st==='extinct'?' †':''}${n.mc?' ★':''}${extra||''}</text>`);
+    txt.push(`<text class="${c.join(' ')}" x="${x.toFixed(1)}" y="${y+4.5}" data-id="${n.id}" data-act="sel" tabindex="0">${esc(n.n)}${st==='extinct'?' †':''}${n.mc?' ★':''}${extra||''}</text>`);
   }
   function draw(n){
     const y=n.y, s=n===VROOT?Math.min(TV,n.p?n.p.T:n.T+70):n.p.T, c=cls(n);
@@ -652,10 +653,10 @@ function treeSVG(){
       n.c.forEach(k=>{const kc=cls(k);if(kc)hl.push(`<line class="br ${kc}" x1="${xs}" x2="${xs}" y1="${y}" y2="${k.y}"/>`);});
       tog(n,xs,y,'−','Zuklappen');
       const ic=['lab','ilab'];if(n===selected)ic.push('sel');
-      const lw=(n.n.length+3)*6.6, isR=n===VROOT, lx=isR?xs+(MOB?14:10):xs-(MOB?14:10);
+      const lw=(n.n.length+1)*6.6, isR=n===VROOT, lx=isR?xs+(MOB?14:10):xs-(MOB?14:10);
       if(isR||!MOB||lw<=lx-X(s)-4||n===selected){ // nur beschriften, wenn der Ast Platz bietet
         hits.push(`<rect class="hit" data-id="${n.id}" data-act="sel" x="${(isR?lx:lx-lw).toFixed(1)}" y="${y-22}" width="${lw.toFixed(1)}" height="20"/>`);
-        txt.push(`<text class="${ic.join(' ')}" x="${lx.toFixed(1)}" y="${y-7}" text-anchor="${isR?'start':'end'}" data-id="${n.id}" data-act="sel">${esc(n.e+' '+n.n)}${n.mc?' ★':''}</text>`);}
+        txt.push(`<text class="${ic.join(' ')}" x="${lx.toFixed(1)}" y="${y-7}" text-anchor="${isR?'start':'end'}" data-id="${n.id}" data-act="sel">${esc(n.n)}${n.mc?' ★':''}</text>`);}
       n.c.forEach(draw);
     } else {
       const E=n.E;
@@ -692,18 +693,18 @@ function axisSVG(){
     :(scaleP<1?(PW<420?[1800,1000,600,400,200,100,0]:[1800,1500,1200,1000,800,600,500,400,300,200,100,50,0])
               :(PW<420?[1800,1200,600,0]:[1800,1600,1400,1200,1000,800,600,400,200,0]))).filter(t=>t<=TV);
   ticks.forEach(t=>{out.push(`<line x1="${X(t)}" x2="${X(t)}" y1="26" y2="31" stroke="var(--line)"/><text class="tick" x="${X(t)}" y="43" text-anchor="middle">${t===0?'heute':t}</text>`);});
-  EVENTS.filter(e=>e.t<=TV).forEach(e=>out.push(`<g data-ev="${EVENTS.indexOf(e)}"><rect class="hit" x="${X(e.t)-14}" y="46" width="28" height="20"/><text class="evsym" x="${X(e.t)}" y="61" text-anchor="middle">${e.s}</text></g>`));
+  EVENTS.filter(e=>e.t<=TV).forEach(e=>out.push(`<g data-ev="${EVENTS.indexOf(e)}"><rect class="hit" x="${X(e.t)-14}" y="46" width="28" height="20"/><circle class="evdot" cx="${X(e.t)}" cy="56" r="3.5"/></g>`));
   out.push(`<text class="tick" x="${L+PW+22}" y="43">Mio. Jahre vor heute</text>`);
   return `<svg width="${W}" height="${AXH}" viewBox="0 0 ${W} ${AXH}">${out.join('')}</svg>`;
 }
 
-const ST={alive:['heute lebend','b-alive','🟢'],extinct:['ausgestorben','b-extinct','†'],mixed:['teils ausgestorben','b-mixed','◐']};
+const ST={alive:['heute lebend','b-alive',''],extinct:['ausgestorben','b-extinct','†'],mixed:['teils ausgestorben','b-mixed','◐']};
 function cleanName(s){return s.replace(/[„“"]/g,'').replace(/\(.*?\)/g,'').replace(/s\. ?l\./,'').trim();}
 function headHTML(n){const s=ST[status(n)];
-  return `<div class="emo">${n.e}</div><div><div class="nm">${esc(n.n)}</div><div class="s2"><i>${esc(n.l)}</i> · <span class="${s[1]}">${s[0]}</span>${n.mc?' · <span class="b-mc">★</span>':''}</div></div><div class="chev">⌃</div>`;}
+  return `<div><div class="nm">${esc(n.n)}</div><div class="s2"><i>${esc(n.l)}</i> · <span class="${s[1]}">${s[0]}</span>${n.mc?' · <span class="b-mc">★</span>':''}</div></div><div class="chev">⌃</div>`;}
 function panelHTML(n){
   const st=status(n), [stTxt,stCls]=ST[st], h=[];
-  h.push(`<figure class="media"><div class="frame loading" id="hero"><div class="ph" aria-hidden="true">${n.e}</div></div><figcaption id="credit"></figcaption></figure>`);
+  h.push(`<figure class="media"><div class="frame loading" id="hero"><div class="ph" aria-hidden="true"></div></div><figcaption id="credit"></figcaption></figure>`);
   h.push(`<span class="badge ${stCls}">${stTxt}</span>`);
   if(n.mc)h.push(`<span class="badge b-mc">★ eigene Erfindung der Mehrzelligkeit</span>`);
   if(n.c)h.push(`<span class="badge">${leaves(n).length} Endgruppen im Baum</span>`);
@@ -720,10 +721,10 @@ function panelHTML(n){
   if(HYDRA){let r;
     if(n===HYDRA)r='Das ist dein Tier. Der hervorgehobene Pfad zeigt die komplette Ahnenreihe bis zur ersten Eukaryotenzelle.';
     else{const a=lca(n,HYDRA);
-      r=a===n?'Hydra gehört zu dieser Gruppe.':`Letzter gemeinsamer Vorfahre mit Hydra: <span class="lk" data-id="${a.id}" tabindex="0">${esc(a.e+' '+a.n)}</span>, ${fmtT(a)}. Im Baum als Punkt markiert.`;}
+      r=a===n?'Hydra gehört zu dieser Gruppe.':`Letzter gemeinsamer Vorfahre mit Hydra: <span class="lk" data-id="${a.id}" tabindex="0">${esc(a.n)}</span>, ${fmtT(a)}. Im Baum als Punkt markiert.`;}
     h.push(`<div class="rel">${r}</div>`);}
   if(n.c){h.push('<h3>Untergruppen</h3><ul class="subs">');
-    n.c.forEach(k=>{const s=ST[status(k)];h.push(`<li data-id="${k.id}" tabindex="0"><span class="ti">${k.e}</span><span>${esc(k.n)}${k.mc?' ★':''}</span><span class="st ${s[1]}">${s[2]} ${s[0]}</span></li>`);});
+    n.c.forEach(k=>{const s=ST[status(k)];h.push(`<li data-id="${k.id}" tabindex="0"><span class="ti"></span><span>${esc(k.n)}${k.mc?' ★':''}</span><span class="st ${s[1]}">${(s[2]?s[2]+' ':'')+s[0]}</span></li>`);});
     h.push('</ul>');}
   h.push('<h3>Abstammung</h3><div class="crumbs">'+path(n).map(a=>a===n?`<b>${esc(a.n)}</b>`:`<span class="lk" data-id="${a.id}" tabindex="0">${esc(a.n)}</span>`).join(' › ')+'</div>');
   const q=encodeURIComponent(n.q||cleanName(n.l));
@@ -738,7 +739,7 @@ const HELP=`<div class="help">
 <li>Gestrichelter Ast: Linie existierte vermutlich, aber es gibt noch keine Fossilien.</li>
 <li>Grauer Keil mit +: zugeklappte Gruppe, Zahl = Untergruppen.</li>
 <li>★: Hier wurde Mehrzelligkeit unabhängig erfunden.</li>
-<li>Feine gestrichelte Senkrechte über den ganzen Baum: Massenaussterben. Tippe auf 💀/☄️ oder ein Zeitalter für Infos.</li>
+<li>Feine gestrichelte Senkrechte über den ganzen Baum: Massenaussterben. Tippe auf die Punkte unter der Zeitachse oder auf ein Zeitalter für Infos.</li>
 </ul>
 <p><b>Bedienen:</b> „Nur Tiere“ zeigt nur die Tiere ab ~800 Mio. Jahren – viel mehr Platz für die spannende Zeit. Name antippen = Details. + / − antippen = auf- und zuklappen. Details-Leiste nach oben ziehen oder antippen. „Breiter“ streckt die Zeitachse – dann erscheinen auch mehr Namen an den inneren Gabelungen. Unbeschriftete Gabelungen erreichst du über die Abstammungsleiste in den Details.</p>
 <p><b>Ehrlich gesagt:</b> Alle Zeiten sind grobe Schätzungen aus molekularen Uhren und Fossilien, oft ±10–30 %, an der Basis mehr. Wo keine belastbare Zahl existiert, ist die Position schematisch und so markiert. Keine heutige Gruppe ist „höher entwickelt“: Hydra hatte genauso viel Evolutionszeit wie du.</p></div>`;
