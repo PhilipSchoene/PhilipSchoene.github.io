@@ -76,9 +76,6 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .meter i{position:absolute;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--ink);transform:translateX(-50%);transition:left .15s linear}
 .meter::after{content:"";position:absolute;left:50%;top:-6px;width:1px;height:14px;background:var(--muted)}
 .swirl b{font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right;font-weight:600}
-ol.why{list-style:none;counter-reset:w}
-ol.why li{counter-increment:w;position:relative;padding:14px 0 14px 32px;border-top:1px solid var(--line)}
-ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -105,8 +102,6 @@ ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var
 
   <div class="verdict" id="verdict"></div>
 
-  <h2>Why</h2>
-  <ol class="why" id="why"></ol>
 </main>
 
 <script>
@@ -160,15 +155,6 @@ function kind() {
 $("eq").innerHTML = tex(R`\begin{aligned}\dot R &= a\,R + b\,J - \varepsilon R^3 + \sqrt{2\mu_R T}\,\xi_R\\ \dot J &= c\,R + d\,J - \varepsilon J^3 + \sqrt{2\mu_J T}\,\xi_J\end{aligned}`, true);
 document.querySelectorAll(".lead, main > p").forEach(el => el.innerHTML = rich(el.innerHTML));
 
-$("why").innerHTML = [
-  R`Variational here means: there is a love potential \(U(R,J)\) and each lover has a positive responsiveness \(\mu\), so that \(\dot R = -\mu_R\,\partial U/\partial R\) and \(\dot J = -\mu_J\,\partial U/\partial J\).`,
-  R`Cross-derivatives must match: \(\partial^2 U/\partial R\,\partial J = -b/\mu_R = -c/\mu_J\). With positive \(\mu\) that works exactly when \(b\) and \(c\) have the same sign. Then \(\mu_R = |b|\), \(\mu_J = |c|\) does it. Unequal size is fine, opposite sign is not.`,
-  R`The self terms \(a, d\) and the saturation \(-\varepsilon R^3\) depend on one lover only, so they never spoil the potential: \(-\varepsilon R^3\) is just the slope of \(\varepsilon R^4/4\). The verdict is decided by \(b\) and \(c\) alone. The saturation is not in Strogatz’s model; it keeps feelings finite and allows endings other than indifference. Set \(\varepsilon = 0\) for the pure linear version, runaways included.`,
-  R`The noise is thermal: each lover jitters with strength \(\mu T\). Then a variational couple reaches true equilibrium, \(P \propto e^{-U/T}\), and every probability current vanishes.`,
-  R`The swirl \(\langle R\dot J - J\dot R\rangle\) is the angular momentum of the probability current. In equilibrium it is exactly zero. A circulating, non-zero swirl is the fingerprint of a non-variational couple.`,
-  R`Particles: the chaser card of the quiz is the special case \(a = -b\), \(d = -c\), where only the gap \(R - J\) matters. Same-sign \(b, c\) is an ordinary spring, opposite signs are a chasing pair that runs off on its own: active matter from non-reciprocity.`,
-  R`Purist’s footnote: if Romeo’s feelings could move Juliet’s directly (an off-diagonal mobility), any linear couple with real eigenvalues could be written as downhill. Here each lover has their own responsiveness, and so does the noise.`
-].map(s => `<li>${rich(s)}</li>`).join("");
 
 // ---------- controls ----------
 const chipBox = $("presets");
