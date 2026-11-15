@@ -133,6 +133,22 @@ a:focus-visible, button:focus-visible { outline: 1px solid var(--fg); outline-of
 
 .empty { color: var(--muted); }
 
+/* Groups on the apps page: a section label, optional module names */
+.group {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.group ~ .group { margin-top: 72px; }
+.module {
+  font: 600 15px/1.3 var(--font);
+  margin: 28px 0 12px;
+}
+.group + .module { margin-top: 0; }
+
 /* ---------- Article ---------- */
 
 .article header { margin-bottom: 48px; }

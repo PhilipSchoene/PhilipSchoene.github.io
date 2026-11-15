@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Variational?</title>
+<link rel="stylesheet" href="../../../assets/katex/katex.min.css">
+<script src="../../../assets/katex/katex.min.js"></script>
+<style>
+:root{
+  --bg:#fff; --ink:#1d1d1f; --muted:#86868b; --line:#e8e8ed; --soft:#f5f5f7;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#000; --ink:#f5f5f7; --muted:#86868b; --line:#2c2c2e; --soft:#1c1c1e; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 var(--font);letter-spacing:-.011em;-webkit-font-smoothing:antialiased}
+main{max-width:680px;margin:0 auto;padding:40px 20px 96px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible{outline:1px solid var(--ink);outline-offset:3px}
+
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.progress{height:1px;background:var(--line);margin:10px 0 48px;position:relative}
+.progress i{position:absolute;left:0;top:-.5px;height:2px;background:var(--ink);transition:width .4s ease}
+
+h1{font:600 clamp(28px,5vw,40px)/1.1 var(--display);letter-spacing:-.03em;margin-bottom:20px}
+h2{font:600 13px/1.3 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:40px 0 12px}
+p{margin-bottom:1em}
+.lead{font-size:19px;line-height:1.5}
+.eq{margin:28px 0 8px;padding:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;text-align:center;font-size:18px}
+.eq{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:14px 44px}
+.eq .katex-display{margin:0}
+@media (max-width:480px){.eq{font-size:15px;justify-content:flex-start}}
+.muted{color:var(--muted)}
+
+.ask{margin-top:40px;text-align:center}
+.ask .q{font:600 21px/1.3 var(--display);letter-spacing:-.02em;margin-bottom:18px}
+.choices{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.choices button{border:1px solid var(--line);border-radius:980px;padding:10px 20px;font-size:15px;transition:background .2s,color .2s,border-color .2s,opacity .2s}
+.choices button:hover:not(:disabled){border-color:var(--ink)}
+.choices button:disabled{cursor:default}
+.choices button.right{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.choices button.wrong{text-decoration:line-through;color:var(--muted)}
+.choices button.dim{opacity:.35}
+
+.answer{margin-top:44px;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.verdict{font:600 24px/1.25 var(--display);letter-spacing:-.02em;margin-bottom:4px}
+.verdict + .muted{font-size:15px;margin-bottom:24px}
+ol.why{list-style:none;counter-reset:w}
+ol.why li{counter-increment:w;position:relative;padding:14px 0 14px 32px;border-top:1px solid var(--line)}
+ol.why li::before{content:counter(w);position:absolute;left:0;top:14px;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.take{margin-top:28px;padding:18px 20px;background:var(--soft);border-radius:14px;font-weight:500}
+.take span{display:block;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:48px}
+.nav .back{color:var(--muted);font-size:15px;padding:8px 0}
+.nav .back:hover{color:var(--ink)}
+.nav .back[hidden]{display:block;visibility:hidden}
+.primary{background:var(--ink);color:var(--bg);border-radius:980px;padding:11px 24px;font-size:15px;font-weight:500;transition:opacity .2s}
+.primary:hover{opacity:.8}
+.primary:disabled{opacity:.25;cursor:default}
+.keys{margin-top:56px;text-align:center;color:var(--muted);font-size:12px}
+@media (hover:none){.keys{display:none}}
+
+ul.plain{list-style:none}
+ul.plain li{padding:12px 0;border-top:1px solid var(--line)}
+ul.plain li:last-child{border-bottom:1px solid var(--line)}
+.score{font:600 clamp(56px,12vw,96px)/1 var(--display);letter-spacing:-.04em;margin:8px 0 4px}
+.missed button{text-align:left;width:100%;padding:12px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px}
+.missed button:hover{opacity:.6}
+.missed button span:last-child{color:var(--muted);white-space:nowrap;font-size:15px}
+.katex{font-size:1.05em}
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+const R = String.raw;
+const LABEL = { yes: "Variational", no: "Not variational", partly: "Partly" };
+
+// Each card: tag, title, setup, eq (display TeX), answer, why[], take.
+// Inline math in text: \( ... \)
+const CARDS = [
+{
+  tag: "Particles", title: "Double well",
+  setup: R`An overdamped particle in a double-well potential, with thermal noise.`,
+  eq: R`\dot x = -\mu\,U'(x) + \sqrt{2D}\,\xi(t), \qquad U(x) = \tfrac{a}{4}x^4 - \tfrac{b}{2}x^2`,
+  answer: "yes",
+  why: [
+    R`The force is \(-U'(x)\) by construction. The potential test is passed trivially.`,
+    R`Without noise \(U\) only goes down: \(\dot U = U'\dot x = -\mu\,U'^2 \le 0\).`,
+    R`With \(D = \mu k_BT\) the steady state is \(P \propto e^{-U/k_BT}\), and the current \(J = -\mu U' P - D P'\) is zero everywhere.`,
+    R`In fact every force \(f(x)\) on a line is a gradient: \(U(x) = -\int^x f\). The next card shows where that fails.`
+  ],
+  take: R`On an open line, any position-dependent force is variational.`
+},
+{
+  tag: "Particles", title: "Driven rotor",
+  setup: R`A phase on a circle with a constant drive \(\omega\) and a periodic barrier. A rotor with a motor, or a particle on a tilted washboard.`,
+  eq: R`\dot\theta = \omega - \sin\theta`,
+  answer: "no",
+  why: [
+    R`Locally it looks like a gradient: \(U(\theta) = -\omega\theta - \cos\theta\) gives \(\dot\theta = -U'(\theta)\).`,
+    R`But \(\theta\) and \(\theta + 2\pi\) are the same state, while \(U(\theta + 2\pi) = U(\theta) - 2\pi\omega\). The “potential” is not a function on the circle. It is a spiral staircase.`,
+    R`For \(|\omega| > 1\) there is no fixed point and the rotor turns forever. A gradient flow can never come back to a state it has left, so it cannot have a cycle.`,
+    R`For \(|\omega| < 1\) it does stop, but add noise and the steady state carries a net current around the circle. Detailed balance is broken.`
+  ],
+  take: R`The potential must be single-valued on the real state space. A constant drive around a loop is the simplest non-variational force, and it is exactly what self-propulsion is.`
+},
+{
+  tag: "Particles", title: "Trap with a swirl",
+  setup: R`A particle in a harmonic trap with an extra rotational force of strength \(c\), plus thermal noise.`,
+  eq: R`\dot x = \mu(-k x - c\,y) + \sqrt{2D}\,\xi_x, \qquad \dot y = \mu(-k y + c\,x) + \sqrt{2D}\,\xi_y`,
+  answer: "no",
+  why: [
+    R`Jacobian test: \(\partial\dot x/\partial y = -\mu c\) but \(\partial\dot y/\partial x = +\mu c\). Not symmetric, so the force has a curl, \(\nabla\times\mathbf f = 2c\).`,
+    R`Without noise the particle spirals in: the eigenvalues are \(\mu(-k \pm i c)\). Complex eigenvalues are impossible for a gradient flow.`,
+    R`The trap: with noise the steady density is still \(P \propto e^{-k r^2/2k_BT}\), exactly Boltzmann, because the swirl only moves probability along circles of constant \(P\).`,
+    R`But the current \(\mathbf J = \mu c\,(\hat{\mathbf z}\times\mathbf r)\,P\) never vanishes. Probability circulates forever: a non-equilibrium steady state.`
+  ],
+  take: R`A Boltzmann-looking density does not prove equilibrium. Look at the currents.`
+},
+{
+  tag: "Particles", title: "Two particles, unequal response",
+  setup: R`Two overdamped particles joined by a spring. One responds more strongly than the other: \(k_1 \neq k_2\), both positive.`,
+  eq: R`\dot x_1 = -k_1\,(x_1 - x_2), \qquad \dot x_2 = -k_2\,(x_2 - x_1)`,
+  answer: "yes",
+  why: [
+    R`With unit mobility the Jacobian \(\begin{pmatrix}-k_1 & k_1\\ k_2 & -k_2\end{pmatrix}\) is not symmetric. Tempting to say no.`,
+    R`But mobilities may differ. Take \(U = \tfrac{k}{2}(x_1 - x_2)^2\) and \(\mu_1 = k_1/k\), \(\mu_2 = k_2/k\). Then \(\dot x_i = -\mu_i\,\partial U/\partial x_i\) exactly.`,
+    R`Physically: the spring pulls both particles equally hard, so action equals reaction. One particle just sits in thicker fluid. With \(D_i = \mu_i k_BT\) the steady state is Boltzmann.`
+  ],
+  take: R`Unequal response is not non-reciprocity. The real test: is \(M^{-1}\mathbf f\) a gradient for some symmetric, positive mobility \(M\)?`
+},
+{
+  tag: "Particles", title: "Chaser and evader",
+  setup: R`Particle 1 is attracted to particle 2. Particle 2 is repelled by particle 1.`,
+  eq: R`\dot x_1 = -k\,(x_1 - x_2), \qquad \dot x_2 = +k\,(x_2 - x_1), \qquad k > 0`,
+  answer: "no",
+  why: [
+    R`Rescuing it as on the last card would need \(\mu_2 = -\mu_1\): a negative mobility. Not allowed, so no choice of \(M\) works.`,
+    R`Solve it: with \(d = x_1 - x_2\), both equations give velocity \(-k d\). The separation stays fixed and the pair runs off together, forever.`,
+    R`Motion that never stops cannot come from rolling downhill. Action is not equal to reaction, and the pair as a whole has become self-propelled.`
+  ],
+  take: R`Opposite-sign responses cannot be fixed by mobilities. Broken action–reaction is a route to self-propulsion.`
+},
+{
+  tag: "Particles", title: "Cyclic chase",
+  setup: R`Three particles, each pulled only towards the next one: 1 follows 2, 2 follows 3, 3 follows 1.`,
+  eq: R`\dot x_1 = k(x_2 - x_1), \qquad \dot x_2 = k(x_3 - x_2), \qquad \dot x_3 = k(x_1 - x_3)`,
+  answer: "no",
+  why: [
+    R`Particle 2 pulls on 1, but 1 does not pull on 2. A zero facing a non-zero entry in the Jacobian: no mobility can symmetrise that.`,
+    R`The matrix is circulant, with eigenvalues \(k\,(e^{2\pi i n/3} - 1)\): that is \(0\) and \(k\,(-\tfrac32 \pm i\tfrac{\sqrt3}{2})\). Complex, so relaxation rotates.`,
+    R`Gradient flows only have real eigenvalues near a fixed point: \(-MH\) is similar to the symmetric \(-M^{1/2} H M^{1/2}\).`,
+    R`General rule for a linear network \(K_{ij}\): it can be symmetrised by mobilities only if \(K_{ij}\) and \(K_{ji}\) always have the same sign (or are both zero) and products around every loop match, e.g. \(K_{12}K_{23}K_{31} = K_{21}K_{32}K_{13}\).`
+  ],
+  take: R`Loops of one-way interactions are non-variational. Complex eigenvalues at a fixed point are a fast diagnostic.`
+},
+{
+  tag: "Active particles", title: "Active particle in a trap",
+  setup: R`An active Brownian particle swims at speed \(v_0\) along its orientation \(\mathbf e(\theta) = (\cos\theta, \sin\theta)\), which diffuses. It sits in a harmonic trap.`,
+  eq: R`\dot{\mathbf r} = v_0\,\mathbf e(\theta) - \mu k\,\mathbf r + \sqrt{2D_t}\,\boldsymbol\xi, \qquad \dot\theta = \sqrt{2D_r}\,\eta`,
+  answer: "no",
+  why: [
+    R`In the state space \((x, y, \theta)\) the drift is \((v_0\cos\theta - \mu k x,\; v_0\sin\theta - \mu k y,\; 0)\). Curl test: \(\partial f_x/\partial\theta = -v_0\sin\theta\), but \(\partial f_\theta/\partial x = 0\). No mobility fixes that.`,
+    R`In words: the swim force depends on \(\theta\), but no torque comes back. Same structure as the driven rotor and the chaser: a drive with no potential behind it.`,
+    R`What you see: when reorientation is slow (\(D_r \ll \mu k\)) the particle piles up on a ring at \(r^* = v_0/\mu k\), where swimming balances the trap. The Boltzmann distribution of a trap peaks at the centre, at any temperature.`
+  ],
+  take: R`Self-propulsion is the rotor’s constant drive, attached to a direction. It is the root non-variational term of active matter.`
+},
+{
+  tag: "Active particles", title: "Free swimmers, long times",
+  setup: R`The same active particles in 2D, no trap, no interactions. Watch them for times much longer than \(1/D_r\).`,
+  eq: R`\langle|\Delta\mathbf r|^2\rangle \;\xrightarrow{\;t \,\gg\, 1/D_r\;}\; 4\Big(D_t + \frac{v_0^2}{2D_r}\Big)\,t`,
+  answer: "partly",
+  why: [
+    R`Microscopically nothing changed. The drive \(v_0\,\mathbf e(\theta)\) still has a curl in \((\mathbf r, \theta)\) space, and currents still flow.`,
+    R`But average over \(\theta\): the position just diffuses, with \(D_{\text{eff}} = D_t + v_0^2/2D_r\). That is indistinguishable from a passive particle at a higher effective temperature, \(k_BT_{\text{eff}} = D_{\text{eff}}/\mu\).`,
+    R`So the coarse description is equilibrium-like (an ideal gas). Activity only shows when something has structure on the scale of the persistence length \(v_0/D_r\): walls, traps (last card), or other particles.`
+  ],
+  take: R`Whether a description is variational depends on the scale. Activity hides at long scales and reappears near walls, obstacles and interfaces.`
+},
+{
+  tag: "Oscillators", title: "Identical Kuramoto oscillators",
+  setup: R`\(N\) phase oscillators, all with the same natural frequency \(\omega\), coupled through the sine of their phase differences.`,
+  eq: R`\dot\theta_i = \omega + \frac{K}{N}\sum_{j}\sin(\theta_j - \theta_i)`,
+  answer: "yes",
+  why: [
+    R`Go to the rotating frame, \(\theta_i \to \theta_i - \omega t\). The common drive \(\omega\) drops out. The rotor problem vanishes because everyone is driven equally.`,
+    R`Then \(\dot\theta_i = -\partial U/\partial\theta_i\) with \(U = -\frac{K}{2N}\sum_{i,j}\cos(\theta_j - \theta_i)\), which is single-valued on the torus.`,
+    R`Jacobian check: \(\partial\dot\theta_i/\partial\theta_j = \frac{K}{N}\cos(\theta_j - \theta_i)\), symmetric in \(i \leftrightarrow j\). Synchronisation is an XY ferromagnet relaxing.`,
+    R`With different frequencies \(\omega_i\), the term \(-\sum_i(\omega_i - \bar\omega)\,\theta_i\) would stay, and with it the spiral staircase.`
+  ],
+  take: R`A shared drive can be removed by a change of frame. Only differences in drive matter.`
+},
+{
+  tag: "Oscillators", title: "Phase lag",
+  setup: R`The same oscillators, but each responds to the others with a phase lag \(\alpha\) (Kuramoto–Sakaguchi).`,
+  eq: R`\dot\theta_i = \omega + \frac{K}{N}\sum_{j}\sin(\theta_j - \theta_i - \alpha)`,
+  answer: "no",
+  why: [
+    R`Jacobian: \(\partial\dot\theta_i/\partial\theta_j = \frac{K}{N}\cos(\theta_j - \theta_i - \alpha)\), but \(\partial\dot\theta_j/\partial\theta_i = \frac{K}{N}\cos(\theta_j - \theta_i + \alpha)\). Equal only for \(\alpha = 0\) or \(\pi\).`,
+    R`Split it: \(\sin(\Delta - \alpha) = \cos\alpha\,\sin\Delta - \sin\alpha\,\cos\Delta\). The odd part is the Kuramoto gradient. The even part, \(\cos\Delta\), pushes both partners the same way: action equals minus reaction fails.`,
+    R`Consequence: full synchrony rotates at \(\omega - K\sin\alpha\), not \(\omega\), and states like chimeras become possible. None of that exists in a gradient flow.`
+  ],
+  take: R`An odd coupling function is reciprocal; any even part is non-reciprocal. The same rule holds for pair forces between particles.`
+},
+{
+  tag: "Fields", title: "Cahn–Hilliard",
+  setup: R`A conserved order parameter, like an oil–water mixture separating (Model B).`,
+  eq: R`\partial_t\phi = \nabla\cdot\big(M\,\nabla\mu\big), \qquad \mu = a\phi + b\phi^3 - K\nabla^2\phi`,
+  answer: "yes",
+  why: [
+    R`\(\mu = \delta F/\delta\phi\) for \(F = \int\big(\tfrac a2\phi^2 + \tfrac b4\phi^4 + \tfrac K2|\nabla\phi|^2\big)\,d\mathbf r\). The gradient term \(\tfrac K2|\nabla\phi|^2\) gives \(-K\nabla^2\phi\).`,
+    R`Then \(\dot F = \int\mu\,\partial_t\phi = -\int M\,|\nabla\mu|^2 \le 0\), after one integration by parts.`,
+    R`Steady states: \(\mu\) uniform, and coexisting phases share the pressure \(f - \mu\phi\). That is the common-tangent construction.`,
+    R`With conserved noise of the right strength the steady state is \(P[\phi] \propto e^{-F/k_BT}\).`
+  ],
+  take: R`The reference everything else is measured against.`
+},
+{
+  tag: "Fields", title: "Quorum-sensing swimmers",
+  setup: R`Run-and-tumble bacteria that slow down where it is crowded: speed \(v(\rho)\) with \(v' < 0\). They sense density over a range \(\ell\), so the speed depends on a smoothed density \(\tilde\rho\). On large scales (Tailleur & Cates, 2008):`,
+  eq: R`\partial_t\rho = \nabla\cdot\big(D_e\,\rho\,\nabla\mu\big), \qquad \mu = \ln\rho + \ln v(\tilde\rho), \qquad \tilde\rho \approx \rho + \ell^2\nabla^2\rho`,
+  answer: "partly",
+  why: [
+    R`Ignore \(\ell\) first. Then \(\mu = \ln\rho + \ln v(\rho) = f'(\rho)\) with \(f = \rho(\ln\rho - 1) + \int^\rho \ln v\). A real free energy. Slowing down acts like attraction, and \(f'' < 0\) when \(\rho\,v'/v < -1\): motility-induced phase separation.`,
+    R`Now expand: \(\ln v(\tilde\rho) \approx \ln v(\rho) - \kappa(\rho)\,\nabla^2\rho\) with \(\kappa = -\ell^2 v'/v > 0\). A gradient term with a density-dependent stiffness.`,
+    R`A stiffness \(\int\tfrac{\kappa}{2}|\nabla\rho|^2\) in a free energy gives \(-\kappa\nabla^2\rho - \tfrac{\kappa'}{2}|\nabla\rho|^2\). The second term is missing here. What is left over is an active \(\lambda|\nabla\rho|^2\) term with \(\lambda = \kappa'/2\).`,
+    R`So it is variational only if \(\kappa\) is constant, which happens for exponential slowing, \(v = v_0\,e^{-\rho/\rho_*}\).`
+  ],
+  take: R`Local physics: variational. Gradient physics: generically not. MIPS is equilibrium-like in the bulk and active at the interfaces.`
+},
+{
+  tag: "Fields", title: "Active Model B",
+  setup: R`Cahn–Hilliard plus the simplest active term allowed by symmetry, \(\lambda|\nabla\phi|^2\). The leading-order theory of motility-induced phase separation.`,
+  eq: R`\partial_t\phi = \nabla^2\mu, \qquad \mu = a\phi + b\phi^3 - K\nabla^2\phi + \lambda|\nabla\phi|^2`,
+  answer: "no",
+  why: [
+    R`Try to build \(F\). A stiffness \(\int\tfrac{\kappa(\phi)}{2}|\nabla\phi|^2\) gives \(-\kappa\nabla^2\phi - \tfrac{\kappa'}{2}|\nabla\phi|^2\). Matching needs \(\kappa = K\), constant, and \(-\kappa'/2 = \lambda\) at the same time. Impossible for \(\lambda \neq 0\).`,
+    R`Cleaner test: if \(\mu = \delta F/\delta\phi\), then \(\delta\mu(\mathbf r)/\delta\phi(\mathbf r')\) is a second derivative of \(F\), so a symmetric (self-adjoint) operator.`,
+    R`The \(\lambda\) term contributes \(2\lambda\,\nabla\phi\cdot\nabla\). Its adjoint is \(-2\lambda\,\nabla\phi\cdot\nabla - 2\lambda\,(\nabla^2\phi)\). Not equal, so no \(F\) exists.`,
+    R`Where it bites: the term needs \(\nabla\phi \neq 0\). In steady state the entropy production sits at the interfaces; the bulk phases look passive.`
+  ],
+  take: R`One gradient term is enough to break the free-energy structure, and it acts only where there are gradients: at interfaces.`
+},
+{
+  tag: "Fields", title: "Coexistence in Active Model B",
+  setup: R`Same model. Now ask only for the two bulk densities \(\phi_1, \phi_2\) on either side of a flat interface in steady state, where \(\mu\) takes one constant value \(\bar\mu\) across the interface. Is there still a common-tangent construction?`,
+  eq: R`\bar\mu = f_0'(\phi) - K\phi'' + \lambda\,\phi'^2, \qquad f_0' = a\phi + b\phi^3`,
+  answer: "partly",
+  why: [
+    R`No flux in steady state means \(\mu = \bar\mu\) everywhere. In the bulk the gradients vanish, so \(f_0'(\phi_1) = f_0'(\phi_2) = \bar\mu\). Same as equilibrium.`,
+    R`The second condition, equal pressure, usually comes from multiplying by \(\phi'\) and integrating across the interface. The \(\lambda\phi'^2\) term spoils that.`,
+    R`Fix: multiply by \(R'(\phi)\,\phi'\) instead, with \(R\) chosen so the gradient terms become a total derivative. That needs \(K R'' = -2\lambda R'\), so \(R'(\phi) = e^{-2\lambda\phi/K}\).`,
+    R`Result: \(\int_{\phi_1}^{\phi_2}(f_0' - \bar\mu)\,dR = 0\). An ordinary common tangent on a pseudo free energy \(\Phi(R)\) with \(d\Phi/dR = f_0'\), in the pseudo-density \(R\) (Solon et al., 2018). For \(\lambda = 0\), \(R = \phi\) and Maxwell’s rule is back.`,
+    R`What does not carry over directly: curved interfaces. Droplet pressures and Ostwald ripening need a separate “pseudo-tension”, and with the extra term of Active Model B+ ripening can even run in reverse.`
+  ],
+  take: R`Bulk coexistence can be variational in disguise, in the right variable. Interfaces and their curvature are where the non-variational physics lives.`
+},
+{
+  tag: "Fields", title: "Active Model B+ in 1D and 2D",
+  setup: R`Active Model B+ adds a current that is not obviously the gradient of anything. Can it be absorbed into a chemical potential?`,
+  eq: R`\partial_t\phi = -\nabla\cdot\mathbf J, \qquad \mathbf J = -\nabla\mu + \zeta\,(\nabla^2\phi)\,\nabla\phi`,
+  answer: "partly",
+  why: [
+    R`In 1D: \(\phi''\phi' = \partial_x\big(\tfrac12\phi'^2\big)\). So the \(\zeta\) current is \(-\partial_x\) of \(-\tfrac{\zeta}{2}\phi'^2\). It just shifts \(\lambda \to \lambda - \zeta/2\). Back to Active Model B: not variational, but no worse.`,
+    R`In 2D and 3D: \((\nabla^2\phi)\,\nabla\phi = \nabla\cdot(\nabla\phi\,\nabla\phi) - \nabla\tfrac12|\nabla\phi|^2\). The second piece is a gradient. The first is not: its curl, \(\nabla(\nabla^2\phi)\times\nabla\phi\), is generally non-zero.`,
+    R`A current with a curl cannot be \(-\nabla\) of any chemical potential, local or not.`,
+    R`Together with \(\lambda\) it sets a pseudo-tension that can turn negative. Then Ostwald ripening runs in reverse and droplets or bubbles stop coarsening at a finite size (Tjhung, Nardini & Cates, 2018).`
+  ],
+  take: R`Dimension matters. In 1D the extra active current is secretly a gradient. Only for d ≥ 2 does it add rotational, non-integrable physics.`
+},
+{
+  tag: "Fields", title: "Two species, one chases the other",
+  setup: R`Two conserved species, each able to phase separate. A is drawn towards B, B runs from A: the field version of the chaser and evader (non-reciprocal Cahn–Hilliard). \(\alpha > 0\).`,
+  eq: R`\partial_t\phi_A = \nabla^2\Big(\frac{\delta F}{\delta\phi_A} - \alpha\,\phi_B\Big), \qquad \partial_t\phi_B = \nabla^2\Big(\frac{\delta F}{\delta\phi_B} + \alpha\,\phi_A\Big)`,
+  answer: "no",
+  why: [
+    R`A reciprocal coupling \(\chi\int\phi_A\phi_B\) puts \(\chi\phi_B\) into \(\mu_A\) and \(\chi\phi_A\) into \(\mu_B\): the same sign. Unequal but same-sign couplings can be absorbed into the mobilities, exactly as for the two particles with unequal response.`,
+    R`Opposite signs would need a negative mobility. No \(F\) exists; \(\alpha\) is pure non-reciprocity.`,
+    R`The signature: linear growth rates become complex, and for strong enough \(\alpha\) the pattern travels. Bands of A chase bands of B across the system, persistent motion no free energy could produce (Saha, Agudo-Canalejo & Golestanian; You, Baskaran & Marchetti; both 2020).`
+  ],
+  take: R`The field-level chaser and evader. Antisymmetric couplings make travelling patterns; symmetric ones, however unequal, never do.`
+},
+{
+  tag: "Fields", title: "Flocking",
+  setup: R`A polar active fluid (Toner–Tu). The polarisation \(\mathbf p\), the local average swimming direction, tends to align and is carried along by its own motion. The particles are carried by \(\mathbf p\) too.`,
+  eq: R`\partial_t\mathbf p + \lambda(\mathbf p\cdot\nabla)\mathbf p = -\big(a + b|\mathbf p|^2\big)\mathbf p + K\nabla^2\mathbf p - v_1\nabla\rho, \qquad \partial_t\rho = -v_0\nabla\cdot(\rho\,\mathbf p)`,
+  answer: "partly",
+  why: [
+    R`\(-(a + b|\mathbf p|^2)\mathbf p + K\nabla^2\mathbf p = -\delta F/\delta\mathbf p\) with \(F = \int\big(\tfrac a2|\mathbf p|^2 + \tfrac b4|\mathbf p|^4 + \tfrac K2|\nabla\mathbf p|^2\big)\). Alignment alone is a ferromagnet relaxing: variational. For \(a < 0\) it orders.`,
+    R`Self-advection \(\lambda(\mathbf p\cdot\nabla)\mathbf p\) is not. Linearised around a uniform state it is the operator \(\lambda\,\mathbf p_0\cdot\nabla\), which is anti-self-adjoint: it transports structure instead of lowering an energy.`,
+    R`The density current \(v_0\rho\,\mathbf p\) is self-propulsion, not \(-M\nabla\,\delta F/\delta\rho\). Coupled to alignment it produces travelling bands near the onset of flocking.`,
+    R`The proof that it matters: a 2D flock has true long-range order. Mermin–Wagner forbids that for any 2D equilibrium system with a continuous symmetry and short-range interactions.`
+  ],
+  take: R`Partly variational is the rule. Ordering is a free-energy story; the motion on top of it is not.`
+}
+];
+
+// ---------- rendering ----------
+
+const app = document.getElementById("app");
+const KEY = "variational-quiz-v1";
+let state = load();          // { i: -1 intro | 0..n-1 card | n end, a: {index: choice} }
+
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.a) return s; } catch (e) {}
+  return { i: -1, a: {} };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+function tex(s, display) {
+  if (!window.katex) return '<code>' + s + '</code>';
+  return katex.renderToString(s, { displayMode: !!display, throwOnError: false });
+}
+function rich(s) { return s.replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => tex(t, false)); }
+
+function score() {
+  return CARDS.reduce((n, c, i) => n + (state.a[i] === c.answer ? 1 : 0), 0);
+}
+
+function go(i) {
+  state.i = Math.max(-1, Math.min(CARDS.length, i));
+  save();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function render() {
+  if (state.i < 0) return intro();
+  if (state.i >= CARDS.length) return end();
+  card(state.i);
+}
+
+function intro() {
+  document.title = "Variational?";
+  app.innerHTML = `
+    <div class="meta"><span>Active Matter</span><span>${CARDS.length} cards</span></div>
+    <div class="progress"><i style="width:0"></i></div>
+    <h1>Variational or not?</h1>
+    <p class="lead">Active matter is sometimes variational, sometimes not, and often partly. Each card shows a system and its equations. Decide, then read why.</p>
+
+    <h2>Potential</h2>
+    <p>${rich(R`The dynamics run downhill on one scalar function: \(\dot{\mathbf x} = -M\nabla U\) with \(M\) symmetric and positive, or for fields \(\partial_t\phi = -\Gamma\,\delta F/\delta\phi\) and \(\partial_t\phi = \nabla\cdot M\nabla\,\delta F/\delta\phi\).`)}</p>
+    <p>${rich(R`Quick check: after dividing out \(M\), the Jacobian \(\partial f_i/\partial x_j\) is symmetric (no curl). For fields, \(\delta\mu(\mathbf r)/\delta\phi(\mathbf r')\) is symmetric.`)}</p>
+
+    <h2>Free energy</h2>
+    <p>${rich(R`Add noise at temperature \(T\). Variational dynamics relax to \(P \propto e^{-F/k_BT}\), with every probability current zero (detailed balance).`)}</p>
+
+    <h2>Red flags</h2>
+    <p>Limit cycles, travelling waves, steady currents, relaxation that oscillates. A gradient flow can do none of these.</p>
+
+    <h2>Partly</h2>
+    <p>One part, one limit or one level of description is variational. The rest is not.</p>
+
+    <div class="nav"><span></span><button class="primary" id="start">${Object.keys(state.a).length ? "Continue" : "Start"}</button></div>
+    <p class="keys">Keys: 1 2 3 to answer · → next · ← back</p>`;
+  document.getElementById("start").onclick = () => {
+    const first = CARDS.findIndex((_, i) => !(i in state.a));
+    go(first < 0 ? 0 : first);
+  };
+}
+
+function card(i) {
+  const c = CARDS[i];
+  const chosen = state.a[i];
+  document.title = c.title;
+  app.innerHTML = `
+    <div class="meta"><span>${c.tag}</span><span>${i + 1} / ${CARDS.length}</span></div>
+    <div class="progress"><i style="width:${(i / CARDS.length) * 100}%"></i></div>
+    <h1>${c.title}</h1>
+    <p>${rich(c.setup)}</p>
+    <div class="eq">${c.eq.split(/,\s*\\qquad\s*/).map(t => "<div>" + tex(t, true) + "</div>").join("")}</div>
+    <div class="ask">
+      <div class="q">Variational?</div>
+      <div class="choices">
+        ${["yes", "no", "partly"].map((k, n) => `<button data-k="${k}" aria-keyshortcuts="${n + 1}">${LABEL[k]}</button>`).join("")}
+      </div>
+    </div>
+    <div id="answer"></div>
+    <div class="nav">
+      <button class="back" id="prev">← Back</button>
+      <button class="primary" id="next" ${chosen ? "" : "disabled"}>${i === CARDS.length - 1 ? "Finish" : "Next"}</button>
+    </div>`;
+  app.querySelectorAll(".choices button").forEach(b => b.onclick = () => choose(b.dataset.k));
+  document.getElementById("prev").onclick = () => go(i - 1);
+  document.getElementById("next").onclick = () => go(i + 1);
+  if (chosen) reveal(i, chosen, false);
+}
+
+function choose(k) {
+  const i = state.i;
+  if (i < 0 || i >= CARDS.length || state.a[i]) return;
+  state.a[i] = k;
+  save();
+  reveal(i, k, true);
+  document.getElementById("next").disabled = false;
+}
+
+function reveal(i, k, scroll) {
+  const c = CARDS[i];
+  const ok = k === c.answer;
+  app.querySelectorAll(".choices button").forEach(b => {
+    b.disabled = true;
+    if (b.dataset.k === c.answer) b.classList.add("right");
+    else if (b.dataset.k === k) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+  const box = document.getElementById("answer");
+  box.className = "answer";
+  box.innerHTML = `
+    <div class="verdict">${LABEL[c.answer]}.</div>
+    <div class="muted">${ok ? "Right." : "You said: " + LABEL[k].toLowerCase() + "."}</div>
+    <ol class="why">${c.why.map(w => `<li>${rich(w)}</li>`).join("")}</ol>
+    <div class="take"><span>Takeaway</span>${rich(c.take)}</div>`;
+  if (scroll) box.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function end() {
+  document.title = "Variational?";
+  const s = score();
+  const missed = CARDS.map((c, i) => ({ c, i })).filter(o => state.a[o.i] !== o.c.answer);
+  app.innerHTML = `
+    <div class="meta"><span>Done</span><span>${CARDS.length} / ${CARDS.length}</span></div>
+    <div class="progress"><i style="width:100%"></i></div>
+    <div class="score">${s} / ${CARDS.length}</div>
+    <p class="muted">${s === CARDS.length ? "All of them." : "Tap a card to see it again."}</p>
+    ${missed.length ? `<h2>Missed</h2><div class="missed">${missed.map(o =>
+      `<button data-i="${o.i}"><span>${o.c.title}</span><span>${LABEL[o.c.answer]}</span></button>`).join("")}</div>` : ""}
+
+    <h2>What breaks it</h2>
+    <ul class="plain">
+      <li>A drive around a loop: the rotor, self-propulsion.</li>
+      <li>A curl in the force, or a current with a curl.</li>
+      <li>Non-reciprocity: one-way or opposite-sign couplings, even parts of coupling functions.</li>
+      <li>Transport terms that move structure instead of relaxing it.</li>
+      <li>${rich(R`Gradient terms no \(F\) can produce: \(\lambda|\nabla\phi|^2\), and \(\zeta(\nabla^2\phi)\nabla\phi\) in d ≥ 2.`)}</li>
+    </ul>
+
+    <h2>What rescues it, partly</h2>
+    <ul class="plain">
+      <li>Unequal but positive mobilities.</li>
+      <li>A change of frame that removes a shared drive.</li>
+      <li>A change of variable: the pseudo-density of active coexistence.</li>
+      <li>Coarse-graining: an effective temperature at long scales.</li>
+      <li>Dropping gradients: local theories of MIPS.</li>
+    </ul>
+
+    <div class="nav">
+      <button class="back" id="prev">← Back</button>
+      <button class="primary" id="again">Start again</button>
+    </div>`;
+  app.querySelectorAll(".missed button").forEach(b => b.onclick = () => go(+b.dataset.i));
+  document.getElementById("prev").onclick = () => go(CARDS.length - 1);
+  document.getElementById("again").onclick = () => { state = { i: 0, a: {} }; save(); render(); window.scrollTo(0, 0); };
+}
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const i = state.i;
+  if (i >= 0 && i < CARDS.length && ["1", "2", "3"].includes(e.key)) choose(["yes", "no", "partly"][+e.key - 1]);
+  else if (e.key === "ArrowRight") {
+    if (i < 0) document.getElementById("start").click();
+    else if (i < CARDS.length && state.a[i]) go(i + 1);
+  }
+  else if (e.key === "ArrowLeft" && i >= 0) go(i - 1);
+});
+
+render();
+</script>
+</body>
+</html>

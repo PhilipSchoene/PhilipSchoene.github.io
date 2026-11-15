@@ -1,14 +1,19 @@
 // The one list to edit when adding an app or an entry.
 //
-// Apps:    put the .html file in /apps/ and add a line below.
-//          "file" is the file name inside /apps/.
+// Apps:    put the .html file in its folder inside /apps/ and add a line below.
+//          "file"    path inside /apps/
+//          "section" "Use cases" or "Study"
+//          "module"  only for Study: the learning module it belongs to
+//          Apps show up grouped, in the order listed here.
 // Writing: put the .html file in /writing/posts/ and add a line below.
 //          Newest first.
 
 window.SITE = {
   apps: [
-    { slug: "microscopy",   title: "Microscopy",   note: "Calculations for the bench", file: "microscopy.html" },
-    { slug: "tree-of-life", title: "Tree of Life", note: "Multicellular life through time", file: "tree-of-life.html" }
+    { slug: "tree-of-life", title: "Tree of Life", note: "Multicellular life through time", file: "use-cases/tree-of-life.html", section: "Use cases" },
+    { slug: "microscopy",   title: "Microscopy",   note: "Calculations for the bench",     file: "use-cases/microscopy.html",   section: "Use cases" },
+
+    { slug: "variational",  title: "Variational?", note: "Active matter, case by case",    file: "study/active-matter/variational.html", section: "Study", module: "Active Matter" }
   ],
 
   posts: [

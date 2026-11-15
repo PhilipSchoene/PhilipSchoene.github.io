@@ -17,14 +17,38 @@
 
   <main class="page">
     <h1>Apps</h1>
-    <ul class="list" id="apps"></ul>
+    <div id="apps"></div>
   </main>
 
   <script src="../assets/content.js"></script>
   <script>
-    var list = document.getElementById("apps");
+    var main = document.getElementById("apps");
 
-    if (!SITE.apps.length) list.outerHTML = '<p class="empty">Nothing yet.</p>';
+    if (!SITE.apps.length) main.innerHTML = '<p class="empty">Nothing yet.</p>';
+
+    // Group by section, then by module, keeping the order of content.js.
+    var lists = {};
+    function listFor(section, module) {
+      var key = section + "/" + (module || "");
+      if (lists[key]) return lists[key];
+      if (!lists[section]) {
+        var h = document.createElement("h2");
+        h.className = "group";
+        h.textContent = section;
+        main.append(h);
+        lists[section] = true;
+      }
+      if (module) {
+        var m = document.createElement("h3");
+        m.className = "module";
+        m.textContent = module;
+        main.append(m);
+      }
+      var ul = document.createElement("ul");
+      ul.className = "list";
+      main.append(ul);
+      return (lists[key] = ul);
+    }
 
     SITE.apps.forEach(function (app) {
       var li = document.createElement("li");
@@ -38,7 +62,7 @@
       n.textContent = app.note || "";
       a.append(t, n);
       li.append(a);
-      list.append(li);
+      listFor(app.section || "Apps", app.module).append(li);
     });
   </script>
 </body>
